@@ -42,7 +42,8 @@ function inspect_arg!(arg, docstrings, kwdocstrings, verifiers)
         end
         #:($x=$val) => :($(inspect_arg!(x, docstrings, verifiers)) = $val)
         Expr(:comparison, a, op1, x, op2, b) ||
-        :($x < $a) || :($x <= $a) || :($x > $a) || :($x >= $a) => begin
+        :($x < $a) || :($x <= $a) || :($x > $a) || :($x >= $a) ||
+        :($x ∈ $y) || :($x in $y) => begin
             xx = argname(x)
             aarg = comparename(arg)
             push!(docstrings, "* `$x` s.t. `$(aarg)`")

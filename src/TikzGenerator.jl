@@ -130,7 +130,7 @@ struct Line <: AbstractTikzElement
     annotate::Annotate
     props::Dict{String,String}
 end
-@interface function Line(path...; annotate::Union{String,Annotate}="", arrow::String="", 0<=line_width::Real<Inf = 0.03, line_style::String="", kwargs...)
+@interface function Line(path...; annotate::Union{String,Annotate}="", arrow::String ∈ ["->", "<-", "-latex", "latex-", "<->", "latex-latex"] ="", 0<=line_width::Real<Inf = 0.03, line_style::String="", kwargs...)
     ann = annotate isa String ? Annotate(["midway", "above", "sloped"], "", annotate) : annotate
     Line(collect(parse_path.(path)), arrow, line_style, ann, build_props(; line_width="$(line_width)cm", kwargs...))
 end
