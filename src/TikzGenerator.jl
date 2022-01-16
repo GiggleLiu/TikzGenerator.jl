@@ -1,5 +1,7 @@
 module TikzGenerator
 
+include("macros.jl")
+
 export rgbcolor!, Node, Line, BoundingBox, Mesh, Canvas, >>, command, canvas, generate_standalone, StringElement, PlainText, uselib!
 export Cycle, Controls, annotate, Annotate, autoid!, vizgraph!, writepdf
 
@@ -60,15 +62,15 @@ struct Node <: AbstractTikzElement
     props::Dict{String,String}
 end
 
-function Node(x, y;
+@interface function Node(x, y;
         shape::String = "circle",
-        id = autoid!(),
+        id::String = autoid!(),
         text::String = "",
-        fill = "none",
-        draw = "black",
-        inner_sep = 0,   # in cm
-        minimum_size = 0.2,  # in cm
-        line_width = 0.03,   # in cm
+        fill::String = "none",
+        draw::String = "black",
+        inner_sep::Real >= 0 = 0,       # in cm
+        minimum_size::Real >= 0 = 0.2,  # in cm
+        line_width::Real >= 0 = 0.03,   # in cm
         kwargs...)
     props = build_props(;
         fill = fill,
@@ -128,7 +130,7 @@ struct Line <: AbstractTikzElement
     annotate::Annotate
     props::Dict{String,String}
 end
-function Line(path...; annotate::Union{String,Annotate}="", arrow::String="", line_width = 0.03, line_style="", kwargs...)
+@interface function Line(path...; annotate::Union{String,Annotate}="", arrow::String="", 0<=line_width::Real<Inf = 0.03, line_style::String="", kwargs...)
     ann = annotate isa String ? Annotate(["midway", "above", "sloped"], "", annotate) : annotate
     Line(collect(parse_path.(path)), arrow, line_style, ann, build_props(; line_width="$(line_width)cm", kwargs...))
 end
@@ -154,7 +156,7 @@ struct PlainText <: AbstractTikzElement
     text::String
     props::Dict{String,String}
 end
-function PlainText(x, y, text; kwargs...)
+@interface function PlainText(x::Real, y::Real, text::String; kwargs...)
     PlainText(x, y, text, build_props(; kwargs...))
 end
 function command(text::PlainText)

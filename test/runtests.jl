@@ -1,6 +1,10 @@
 using TikzGenerator
 using Test
 
+@testset "macros" begin
+    include("macros.jl")
+end
+
 @testset "commands" begin
     n = Node(0.2, 0.5)
     @test command(n) isa String
