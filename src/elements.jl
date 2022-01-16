@@ -54,13 +54,11 @@ autoid!() = string((instance_counter[] += 1; instance_counter[]))
         right_color::String="",
         kwargs...)
 
-    _remove!(_properties, :shape, :id, :text)
-    return Node(x, y, shape, id, text, use_as_bounding_box, clip, build_props(:Node, _properties))
+    _properties = _remove(_properties, :shape, :id, :text)
+    return Node(x, y, shape, id, text, use_as_bounding_box, clip, build_props(:Node; _properties...))
 end
-function _remove!(props:: Dict, args...)
-    for arg in args
-        delete!(props, arg)
-    end
+function _remove(props::NamedTuple, args...)
+    NamedTuple([k=>getfield(props, k) for k in fieldnames(typeof(props)) if k ∉ args])
 end
 
 function command(node::Node)
@@ -75,8 +73,13 @@ struct Mesh <: AbstractTikzElement
     props::Dict{String,String}
 end
 
-function Mesh(xmin, xmax, ymin, ymax; step=1.0, draw="gray", line_width=0.03, kwargs...)
-    Mesh(xmin, xmax, ymin, ymax, build_props("Mesh"; step="$(step)cm", draw=draw, line_width=line_width, kwargs...))
+@interface function Mesh(xmin, xmax, ymin, ymax;
+        step::Real=1.0,
+        draw::String="gray",
+        line_width::Real>=0=@not_tikz_default(0.03),
+        kwargs...)
+    @show _properties
+    Mesh(xmin, xmax, ymin, ymax, build_props(:Mesh; _properties...))
 end
 function command(grid::Mesh)
     return "\\draw[$(parse_args(String[], grid.props))] ($(grid.xmin-1e-3),$(grid.ymin-1e-3)) grid ($(grid.xmax),$(grid.ymax));"
@@ -127,11 +130,8 @@ end
         rounded_corners::Real>=0=0,
         kwargs...)
     ann = annotate isa String ? Annotate(["midway", "above", "sloped"], "", annotate) : annotate
-    #props = build_props("Line"; line_width=line_width,
-    #        join=join, cap=cap,
-    #        miter_limit=miter_limit, rounded_corners=rounded_corners,
-    #        kwargs...)
-    Line(collect(parse_path.(path)), arrow, line_style, ann, build_props(:Line, _properties))
+    _properties = _remove(_properties, :arrow, :line_style, :annotate)
+    Line(collect(parse_path.(path)), arrow, line_style, ann, build_props(:Line; _properties...))
 end
 parse_path(t::Tuple) = "$(t)"
 parse_path(n::Node) = "($(n.id))"
@@ -141,7 +141,8 @@ function parse_path(c::Controls)
     "$(c.start) .. controls $(join(["$c" for c in c.controls], " and ")) .. $(c.stop)"
 end
 function command(edge::Line)
-    head = "\\draw[$(parse_args([edge.arrow, edge.line_style], edge.props))]"
+    default_values = TIKZ_DEFAULT_VALUES[:Line]
+    head = "\\draw[$(parse_args([ifelse(edge.arrow==default_values[:arrow], "", edge.arrow), ifelse(edge.line_style==default_values[:line_style], "", edge.line_style)], edge.props))]"
     path = join(edge.path, " -- ")
     ann = edge.annotate
     isempty(ann) && return "$head $path;"
@@ -156,7 +157,7 @@ struct PlainText <: AbstractTikzElement
     props::Dict{String,String}
 end
 @interface function PlainText(x::Real, y::Real, text::String; kwargs...)
-    PlainText(x, y, text, build_props(:PlainText, _properties))
+    PlainText(x, y, text, build_props(:PlainText; _properties...))
 end
 function command(text::PlainText)
     "\\node[$(parse_args(String[], text.props))] at ($(text.x), $(text.y)) {$(text.text)};"

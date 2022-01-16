@@ -53,8 +53,8 @@ function writepdf(filename::AbstractString, canvas::Canvas)
     run(`latexmk -pdf $filename -output-directory=$(dirname(filename))`)
 end
 
-build_props(fname::Symbol, kwargs) = update_props!(fname, Dict{String,String}(), kwargs)
-function update_props!(fname::Symbol, dict::Dict, kwargs)
+build_props(fname::Symbol; kwargs...) = update_props!(fname, Dict{String,String}(); kwargs...)
+function update_props!(fname::Symbol, dict::Dict; kwargs...)
     default_values = TIKZ_DEFAULT_VALUES[fname]
     for (k,v) in kwargs
         if !(haskey(default_values, k) && default_values[k] == v)
