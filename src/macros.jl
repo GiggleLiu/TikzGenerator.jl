@@ -1,4 +1,8 @@
 using MatchCore
+
+const TIKZ_DEFAULT_VALUES = Dict{Symbol,Dict{Symbol, Any}}()
+const ARG_EXTRA_DOCS = Dict{Symbol,String}()
+
 """
     match_function(ex)
 
@@ -30,14 +34,26 @@ function checkarg(ex, exval, x, xval)
     end
 end
 
-function inspect_arg!(arg, docstrings, kwdocstrings, verifiers)
+function inspect_arg!(arg, docstrings, kwdocstrings, verifiers, default_values, argnames)
     @smatch arg begin
         Expr(:parameters, kwargs...) => begin
-            Expr(:parameters, [inspect_arg!(kwargs[i], kwdocstrings, docstrings, verifiers) for i=1:length(kwargs)]...)
+            Expr(:parameters, [inspect_arg!(kwargs[i], kwdocstrings, docstrings, verifiers, default_values, argnames) for i=1:length(kwargs)]...)
         end
         Expr(:kw, x, val) => begin
-            rt = Expr(:kw, inspect_arg!(x, docstrings, kwdocstrings, verifiers), val)
-            docstrings[end] *= ", default value is `$(_repr(val))`"
+            xsym = argname(x)
+            push!(argnames, xsym)
+            _val = unquote(val)
+            __val = @smatch _val begin
+                :(@not_tikz_default $line $vv) => vv
+                ::Union{String, Number} => begin
+                    default_values[xsym] = _val
+                    _val
+                end
+                _ => _val
+            end
+            rt = Expr(:kw, inspect_arg!(x, docstrings, kwdocstrings, verifiers, default_values, argnames), __val)
+            # store default values
+            docstrings[end] *= ", default value is `$(_repr(__val))`"
             rt
         end
         #:($x=$val) => :($(inspect_arg!(x, docstrings, verifiers)) = $val)
@@ -46,7 +62,12 @@ function inspect_arg!(arg, docstrings, kwdocstrings, verifiers)
         :($x ∈ $y) || :($x in $y) => begin
             xx = argname(x)
             aarg = comparename(arg)
-            push!(docstrings, "* `$x` s.t. `$(aarg)`")
+            d = "* `$x` s.t. `$(aarg)`"
+            # fetch extra docstrings
+            if haskey(ARG_EXTRA_DOCS, xx)
+                d *= ", $(ARG_EXTRA_DOCS[xx])"
+            end
+            push!(docstrings, d)
             push!(verifiers, :($checkarg($(QuoteNode(aarg)), $aarg, $(QuoteNode(xx)), $xx)))
             x
         end
@@ -65,17 +86,22 @@ function inspect_arg!(arg, docstrings, kwdocstrings, verifiers)
     end
 end
 
-_repr(val) = @smatch val begin
-    # fix line break in argument list
-    Expr(:block, args...) => begin
-        join([_repr(arg) for arg in args if !(arg isa LineNumberNode)], ",")
+# fix line break in argument list
+unquote(ex) = @smatch ex begin
+    Expr(:block, line, arg) => begin
+        @assert line isa LineNumberNode
+        unquote(arg)
     end
-    # other expressions
+    _ => ex
+end
+# fix function call type input arguments
+_repr(val) = @smatch val begin
     ::Expr => string(val)
     _ => repr(val)
 end
 
 argname(ex) = @smatch ex begin
+    Expr(:comparison, a, op1, x, op2, b) || :($op($x, $a)) => argname(x)
     :($x::$TPYE) => x
     ::Symbol => ex
 end
@@ -87,9 +113,12 @@ end
 macro interface(ex)
     mc, fname, args, ts, body = match_function(ex)
     docstrings, kwdocstrings, verifiers = String[], String[], Expr[]
-    new_args = [inspect_arg!(arg, docstrings, kwdocstrings, verifiers) for arg in args]
+    default_values, argnames = Dict{Symbol,Any}(), Symbol[]
+    new_args = [inspect_arg!(arg, docstrings, kwdocstrings, verifiers, default_values, argnames) for arg in args]
+    TIKZ_DEFAULT_VALUES[fname] = default_values
     docstring = "Arguments\n---------------\n" * join(docstrings, "\n") * "\n \nKeyword arguments\n-----------------\n" * join(kwdocstrings, "\n")
-    new_body = [verifiers..., body...]
+    kwargs = Expr(:call, :Dict, [Expr(:call, :(=>), QuoteNode(argname), argname) for argname in argnames]...)
+    new_body = [verifiers..., :(_properties = $kwargs), body...]
     fdef = generate_function(mc, fname, new_args, ts, new_body)
     return esc(Expr(:block, :(Base.@__doc__ $fdef), :(@doc $docstring $fname)))
 end
