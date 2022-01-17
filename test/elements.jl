@@ -13,6 +13,8 @@ using TikzGenerator, Test
     @test command(s) == "jajaja"
     s = PlainText(20.0, 3.0, "jajaja")
     @test command(s) isa String
+    e = Edg("a", "b")
+    @test command(e) isa String
     a = annotate(n, "jajaja"; offsetx=0.1, offsety=0.2)
     @test command(a) isa String
 end

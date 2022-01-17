@@ -84,7 +84,7 @@ function inspect_arg!(arg, docstrings, kwdocstrings, verifiers, default_values, 
         end
         ::Symbol => begin
             push!(_docstrings, "* `$arg`")
-            iskw && push!(argforward, Expr(:(=), x, x))
+            iskw && push!(argforward, Expr(:(=), arg, arg))
             arg
         end
     end
@@ -125,4 +125,8 @@ macro interface(ex)
     new_body = [verifiers..., :(_properties = $kwargs), body...]
     fdef = generate_function(mc, fname, new_args, ts, new_body)
     return esc(Expr(:block, :(Base.@__doc__ $fdef), :(@doc $docstring $fname)))
+end
+
+macro nodefault(a, b)
+    return esc(:(ifelse($a == $b, "", $a)))
 end

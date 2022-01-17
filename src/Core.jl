@@ -5,11 +5,12 @@ struct Canvas
     libs::Vector{String}
     colors::Dict{String, Tuple{Int,Int,Int}}
     contents::Vector{AbstractTikzElement}
+    args::Vector{String}
     props::Dict{String,String}
 end
 
-function canvas(f; header="", libs=String[], colors=Dict{String,Tuple{Int,Int,Int}}(), props=Dict{String,String}())
-    canvas = Canvas(header, libs, colors, AbstractTikzElement[], props)
+function canvas(f; header="", libs=String[], colors=Dict{String,Tuple{Int,Int,Int}}(), args=String[], props=Dict{String,String}())
+    canvas = Canvas(header, libs, colors, AbstractTikzElement[], args, props)
     f(canvas)
     return canvas
 end
@@ -30,19 +31,19 @@ function generate_rgbcolor(name, red, green, blue)
     return "\\definecolor{$name}{RGB}{$red,$green,$blue}"
 end
 
-function generate_standalone(libs::Vector, header::String, props::Dict, content::String)
+function generate_standalone(libs::Vector, header::String, args::Vector, props::Dict, content::String)
     return """
 \\documentclass[crop,tikz]{standalone}
-$(join(["\\usepgflibrary{$lib}" for lib in libs], "\n"))
+$(join(["\\usetikzlibrary{$lib}" for lib in libs], "\n"))
 $(header)
 \\begin{document}
-\\begin{tikzpicture}[$(parse_args(String[], props))]
+\\begin{tikzpicture}[$(parse_args(args, props))]
 $content
 \\end{tikzpicture}
 \\end{document}
 """
 end
-generate_standalone(canvas::Canvas) = generate_standalone(canvas.libs, canvas.header, canvas.props, join([[generate_rgbcolor(k,v...) for (k,v) in canvas.colors]..., command.(canvas.contents)...], "\n"))
+generate_standalone(canvas::Canvas) = generate_standalone(canvas.libs, canvas.header, canvas.args, canvas.props, join([[generate_rgbcolor(k,v...) for (k,v) in canvas.colors]..., command.(canvas.contents)...], "\n"))
 
 function Base.write(io::IO, canvas::Canvas)
     write(io, generate_standalone(canvas))
@@ -58,15 +59,21 @@ function update_props!(fname::Symbol, dict::Dict; kwargs...)
     default_values = TIKZ_DEFAULT_VALUES[fname]
     for (k,v) in kwargs
         if !(haskey(default_values, k) && default_values[k] == v)
-            dict[replace(string(k), "_"=>" ")] = _render_val(v)
+            dict[replace(string(k), "_"=>" ")] = _render_val(k, v)
         end
     end
     return dict
 end
 
 function parse_args(args::Vector, kwargs::Dict)  # properties
-    return join([filter(!isempty, args)..., ["$k=$(_render_val(v))" for (k,v) in kwargs if !isempty(v)]...], ", ")
+    return join([filter(!isempty, args)..., ["$k=$(_render_val(k, v))" for (k,v) in kwargs if !isempty(v)]...], ", ")
 end
-_render_val(v::Real) = "$(v)cm"  # default unit is `cm`
-_render_val(v::String) = v
+function _render_val(k, v::Real)
+    if k ∈ [:line_width, :minimum_size, :inner_sep]
+        "$(v)cm"  # default unit is `cm`
+    else
+        string(v)
+    end
+end
+_render_val(k, v::String) = v
 
