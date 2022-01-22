@@ -4,31 +4,190 @@ struct StringElement <: AbstractTikzElement
 end
 command(s::StringElement) = s.str
 
-struct Node <: AbstractTikzElement
-    x::Float64
-    y::Float64
-    shape::String
+# serve for node id
+const instance_counter = Ref(0)
+autoid!() = string((instance_counter[] += 1; instance_counter[]))
+
+function _remove(props::NamedTuple, args...)
+    NamedTuple([k=>getfield(props, k) for k in fieldnames(typeof(props)) if k ∉ args])
+end
+#=
+struct Mesh <: AbstractTikzElement
+    xmin::Float64
+    xmax::Float64
+    ymin::Float64
+    ymax::Float64
+    props::Dict{String,String}
+end
+
+@interface function Mesh(xmin, xmax, ymin, ymax;
+        step::Real=1.0,
+        draw::String="gray",
+        line_width::Real>=0=0.014,
+        kwargs...)
+    @show _properties
+    Mesh(xmin, xmax, ymin, ymax, build_props(:Mesh; _properties...))
+end
+function command(grid::Mesh)
+    return "\\draw[$(parse_args(String[], grid.props))] ($(grid.xmin-1e-3),$(grid.ymin-1e-3)) grid ($(grid.xmax),$(grid.ymax));"
+end
+=#
+
+abstract type AbstractOperation end
+abstract type AbstractShapeOperation <: AbstractOperation end
+
+struct Circle  <: AbstractShapeOperation
+    radius::Float64
+end
+function command(c::Circle)
+    "circle ($(c.radius)cm)"
+end
+
+struct Ellipse  <: AbstractShapeOperation
+    a::Float64
+    b::Float64
+end
+function command(el::Ellipse)
+    "ellipse ($(el.a)cm and $(el.b)cm)"
+end
+
+struct Rectangle <: AbstractShapeOperation
+end
+function command(r::Rectangle)
+    "rectangle"
+end
+
+struct Coordinate <: AbstractOperation
+    @interface function Coordinate(id::String = autoid!())
+    end
+end
+function command(c::Coordinate)
+    "coordinate ($(c.id))"
+end
+
+struct Node <: AbstractOperation
+    anchor::String
+    placement::String
+    sloped::Bool
     id::String
-    annotate::String
+    text::String
+end
+@interface function Node(;
+        anchor::String ∈ ["midway", "near end", "at end", "very near end", "near start", "very near start", "at start"]="midway",
+        placement::String ∈ ["above left, above, above right, left, right, below left, below, below right", ""] ="",
+        sloped=false,
+        id::String=autoid!(),
+        text::String=""
+    )
+    return Node(anchor, placement, sloped, id, text)
+end
+Base.isempty(ann::Node) = isempty(ann.text)
+function command(ann::Node)
+    default_values = TIKZ_DEFAULT_VALUES[:Annotate]
+    annargs = parse_args([@nodefault(ann.anchor, default_values[:anchor]), @nodefault(ann.placement, default_values[:placement]), ifelse(ann.sloped==default_values[:sloped], "", "sloped")], Dict{String,String}())
+    return "node [$annargs] ($(ann.id)) {$(ann.text)}"
+end
+
+struct Cycle <: AbstractOperation end
+command(s::Cycle) = "cycle"
+
+struct Grid <: AbstractOperation
+    props::Dict{String, String}
+end
+# style "help lines" is equal to "gray, verythin"
+@interface function Grid(; xstep::Real, ystep::Real)
+    Grid(build_props(:Grid, _properties...))
+end
+command(s::Grid) = "grid"
+
+struct Edg <: AbstractOperation
+    arrow::String
+    color::String
+    line_style::String
+    loop::String
+    props::Dict{String,String}
+end
+@interface function Edg(;
+        arrow::String ∈ ["->", "<-","<->", "->>", "<<-", 
+            "-stealth", "stealth-", "stealth-stealth",
+            "-latex", "latex-", "latex-latex",
+            "->|", "|<-", "|<->|",
+            "-"] ="-",
+        line_style::String ∈ ["solid",
+            "dashed", "densely dashed", "loosely dashed",
+            "dotted", "densely dotted", "loosely dotted",
+            "dash dot", "dash dot dot"] ="solid",
+        loop::String ∈ ["", "loop", "loop above", "loop below", "loop left", "loop right", "every loop"] = "",
+        color::String="black",
+        0<=line_width::Real<Inf = 0.014,
+        bend_left::Real=0,
+        bend_right::Real=0,
+    )
+    _properties = _remove(_properties, :arrow, :line_style, :loop, :color)
+    Edg(arrow, color, line_style, loop, build_props(:Edg; _properties...))
+end
+function command(edge::Edg)
+    default_values = TIKZ_DEFAULT_VALUES[:Edg]
+    edgeargs = parse_args([@nodefault(edge.arrow, default_values[:arrow]),
+                            @nodefault(edge.color, default_values[:color]),
+                            @nodefault(edge.line_style, default_values[:line_style]),
+                            @nodefault(edge.loop, default_values[:loop])],
+                            edge.props)
+    return "edge [$edgeargs]"
+end
+
+struct Line <: AbstractOperation
+    props::Dict{String,String}
+end
+
+@interface function Line(; out::Real=0, in::Real=0, bend_right::Real=0, bend_left::Real=0)
+    Line(build_props(_properties))
+end
+command(s::Line) = "to [$(parse_args(String[], s.props))]"
+
+struct Controls <: AbstractOperation
+    controls::Vector{String}
+    Controls(c1) = new([command(c1)])
+    Controls(c1, c2) = new([command(c1), command(c2)])
+end
+
+struct Path <: AbstractTikzElement
+    path::Vector{String}
+    arrow::String
+    line_style::String
     use_as_bounding_box::Bool
     clip::Bool
     props::Dict{String,String}
 end
 
-# serve for node id
-const instance_counter = Ref(0)
-autoid!() = string((instance_counter[] += 1; instance_counter[]))
-
-@interface function Node(x, y;
-        shape::String ∈ ["rectangle", "circle", "diamond", "coordinate", "",
-            # from package automata
-            "initial, state", "state",
-        ] = "",
-        id::String = autoid!(),
-
-        # text
-        annotate::String = "",
-        text::String = "black",
+# line width map
+# * ultra thin, 0.1pt
+# * very thin, 0.2pt
+# * thin, 0.4pt
+# * semithick, 0.6pt
+# * thick, 0.8pt
+# * very thick, 1.2pt
+# * ultra thick, 1.6pt
+# arrow styles: https://latexdraw.com/exploring-tikz-arrows/
+# line styles: https://stex.stackexchange.com/questions/45275/tikz-get-values-for-predefined-dash-patterns
+# TODO:
+# * `dash_phase` and `dash pattern`
+@interface function Path(path...;
+        arrow::String ∈ ["->", "<-","<->", "->>", "<<-", 
+            "-stealth", "stealth-", "stealth-stealth",
+            "-latex", "latex-", "latex-latex",
+            "->|", "|<-", "|<->|",
+            "-"] ="-",
+        line_width::Real >= 0 = 0.014,   # in cm, equals to 0.4pt
+        line_style::String ∈ ["solid",
+            "dashed", "densely dashed", "loosely dashed",
+            "dotted", "densely dotted", "loosely dotted",
+            "dash dot", "dash dot dot"] ="solid",
+        miter_limit::Real>0=10,
+        shorten::Tuple{Real, Real} = (0.0, 0.0),
+        join::String ∈ ["round", "bevel", "miter"]="miter",
+        cap::String ∈ ["rect", "butt", "round"]="butt",
+        rounded_corners::Real>=0=0,
 
         # fill
         fill::String = "",
@@ -37,7 +196,6 @@ autoid!() = string((instance_counter[] += 1; instance_counter[]))
         # draw
         draw::String = "",
         draw_opacity::Real = 1,
-        line_width::Real >= 0 = 0.014,   # in cm, equals to 0.4pt
 
         # other styles
         clip::Bool = false,
@@ -62,181 +220,30 @@ autoid!() = string((instance_counter[] += 1; instance_counter[]))
         bottom_color::String="",
         left_color::String="",
         right_color::String="",
-        kwargs...)
 
-    _properties = _remove(_properties, :shape, :id, :annotate)
-    return Node(x, y, shape, id, annotate, use_as_bounding_box, clip, build_props(:Node; _properties...))
-end
-function _remove(props::NamedTuple, args...)
-    NamedTuple([k=>getfield(props, k) for k in fieldnames(typeof(props)) if k ∉ args])
-end
-
-function command(node::Node)
-    return "\\node[$(parse_args([string(node.shape), ifelse(node.clip, "clip", ""), ifelse(node.use_as_bounding_box, "use_as_bounding_box", "")], node.props))] at ($(node.x), $(node.y)) ($(node.id)) {$(node.annotate)};"
-end
-
-struct Mesh <: AbstractTikzElement
-    xmin::Float64
-    xmax::Float64
-    ymin::Float64
-    ymax::Float64
-    props::Dict{String,String}
-end
-
-@interface function Mesh(xmin, xmax, ymin, ymax;
-        step::Real=1.0,
-        draw::String="gray",
-        line_width::Real>=0=0.014,
-        kwargs...)
-    @show _properties
-    Mesh(xmin, xmax, ymin, ymax, build_props(:Mesh; _properties...))
-end
-function command(grid::Mesh)
-    return "\\draw[$(parse_args(String[], grid.props))] ($(grid.xmin-1e-3),$(grid.ymin-1e-3)) grid ($(grid.xmax),$(grid.ymax));"
-end
-
-struct Cycle end
-struct Controls
-    start::String
-    controls::Vector{String}
-    stop::String
-    Controls(start, c1, stop) = new(parse_path(start), [parse_path(c1)], parse_path(stop))
-    Controls(start, c1, c2, stop) = new(parse_path(start), [parse_path(c1), parse_path(c2)], parse_path(stop))
-end
-
-struct Annotate
-    anchor::String
-    placement::String
-    sloped::Bool
-    id::String
-    text::String
-end
-
-@interface function Annotate(;
-        anchor::String ∈ ["midway", "near end", "at end", "very near end", "near start", "very near start", "at start"]="midway",
-        placement::String ∈ ["above left, above, above right, left, right, below left, below, below right", ""] ="",
-        sloped=false,
-        id::String=autoid!(),
-        text::String=""
-    )
-    return Annotate(anchor, placement, sloped, id, text)
-end
-Base.isempty(ann::Annotate) = isempty(ann.text)
-function command(ann::Annotate)
-    default_values = TIKZ_DEFAULT_VALUES[:Annotate]
-    annargs = parse_args([@nodefault(ann.anchor, default_values[:anchor]), @nodefault(ann.placement, default_values[:placement]), ifelse(ann.sloped==default_values[:sloped], "", "sloped")], Dict{String,String}())
-    return "node [$annargs] ($(ann.id)) {$(ann.text)}"
-end
-
-struct Edg <: AbstractTikzElement
-    a::String
-    b::String
-    arrow::String
-    line_style::String
-    annotate::Annotate
-    loop::String
-    props::Dict{String,String}
-end
-
-@interface function Edg(a, b; annotate::Union{String,Annotate}="",
-        arrow::String ∈ ["->", "<-","<->", "->>", "<<-", 
-            "-stealth", "stealth-", "stealth-stealth",
-            "-latex", "latex-", "latex-latex",
-            "->|", "|<-", "|<->|",
-            "-"] ="-",
-        0<=line_width::Real<Inf = 0.014,
-        line_style::String ∈ ["solid",
-            "dashed", "densely dashed", "loosely dashed",
-            "dotted", "densely dotted", "loosely dotted",
-            "dash dot", "dash dot dot"] ="solid",
-        loop::String ∈ ["", "loop", "loop above", "loop below", "loop left", "loop right", "every loop"] = "",
-        bend_left::Real=0,
-        bend_right::Real=0,
-        cap::String ∈ ["rect", "butt", "round"]="butt",
         kwargs...)
     ann = annotate isa String ? Annotate(; anchor="midway", placement="", sloped=false, text=annotate) : annotate
-    _properties = _remove(_properties, :arrow, :line_style, :annotate, :loop)
-    Edg(parse_path(a), parse_path(b), arrow, line_style, ann, loop, build_props(:Edg; _properties...))
+    _properties = _remove(_properties, :arrow, :line_style, :shorten, :clip, :use_as_bounding_box)
+    props = build_props(:Path; _properties...)
+    props["shorten <"] = "$(shorten[1])cm"
+    props["shorten >"] = "$(shorten[2])cm"
+    Path(collect(command.(path)), arrow, line_style, use_as_bounding_box, clip, props)
 end
-
-function command(edge::Edg)
-    default_values = TIKZ_DEFAULT_VALUES[:Edg]
-    edgeargs = parse_args([@nodefault(edge.arrow, default_values[:arrow]), @nodefault(edge.loop, default_values[:loop]), @nodefault(edge.line_style, default_values[:line_style])], edge.props)
-    isempty(edge.annotate) && return "\\path $(edge.a) edge [$edgeargs] $(edge.b);"
-    annotate = command(edge.annotate)
-    return "\\path $(edge.a) edge [$edgeargs] $annotate $(edge.b);"
+command(t::Tuple) = "$(t)"
+command(s::String) = "($s)"
+function command(c::Controls)
+    ".. controls $(join(["$c" for c in c.controls], " and ")) .."
 end
-
-struct Line <: AbstractTikzElement
-    path::Vector{String}
-    arrow::String
-    line_style::String
-    annotate::Annotate
-    props::Dict{String,String}
+function command(path::Path)
+    default_values = TIKZ_DEFAULT_VALUES[:Path]
+    head = "\\path[$(parse_args([@nodefault(path.arrow, default_values[:arrow]),
+                    ifelse(node.clip, "clip", ""),
+                    ifelse(node.use_as_bounding_box, "use_as_bounding_box", ""),
+                    @nodefault(path.line_style, default_values[:line_style])],
+                    path.props))]"
+    args = join(path.path, " ")
+    return "$head $args;"
 end
-
-# line width map
-# * ultra thin, 0.1pt
-# * very thin, 0.2pt
-# * thin, 0.4pt
-# * semithick, 0.6pt
-# * thick, 0.8pt
-# * very thick, 1.2pt
-# * ultra thick, 1.6pt
-# arrow styles: https://latexdraw.com/exploring-tikz-arrows/
-# line styles: https://stex.stackexchange.com/questions/45275/tikz-get-values-for-predefined-dash-patterns
-# TODO:
-# * `dash_phase` and `dash pattern`
-@interface function Line(path...; annotate::Union{String,Annotate}="",
-        arrow::String ∈ ["->", "<-","<->", "->>", "<<-", 
-            "-stealth", "stealth-", "stealth-stealth",
-            "-latex", "latex-", "latex-latex",
-            "->|", "|<-", "|<->|",
-            "-"] ="-",
-        0<=line_width::Real<Inf = 0.014,
-        line_style::String ∈ ["solid",
-            "dashed", "densely dashed", "loosely dashed",
-            "dotted", "densely dotted", "loosely dotted",
-            "dash dot", "dash dot dot"] ="solid",
-        miter_limit::Real>0=10,
-        join::String ∈ ["round", "bevel", "miter"]="miter",
-        cap::String ∈ ["rect", "butt", "round"]="butt",
-        rounded_corners::Real>=0=0,
-        kwargs...)
-    ann = annotate isa String ? Annotate(; anchor="midway", placement="", sloped=false, text=annotate) : annotate
-    _properties = _remove(_properties, :arrow, :line_style, :annotate)
-    Line(collect(parse_path.(path)), arrow, line_style, ann, build_props(:Line; _properties...))
-end
-parse_path(t::Tuple) = "$(t)"
-parse_path(n::Node) = "($(n.id))"
-parse_path(s::String) = "($s)"
-parse_path(s::Cycle) = "cycle"
-function parse_path(c::Controls)
-    "$(c.start) .. controls $(join(["$c" for c in c.controls], " and ")) .. $(c.stop)"
-end
-function command(edge::Line)
-    default_values = TIKZ_DEFAULT_VALUES[:Line]
-    head = "\\draw[$(parse_args([@nodefault(edge.arrow, default_values[:arrow]), @nodefault(edge.line_style, default_values[:line_style])], edge.props))]"
-    path = join(edge.path, " -- ")
-    annotate = command(edge.annotate)
-    isempty(ann) && return "$head $path;"
-    return "$head $path $annotate;"
-end
-
-struct PlainText <: AbstractTikzElement
-    x::Float64
-    y::Float64
-    text::String
-    props::Dict{String,String}
-end
-@interface function PlainText(x::Real, y::Real, text::String; kwargs...)
-    PlainText(x, y, text, build_props(:PlainText; _properties...))
-end
-function command(text::PlainText)
-    "\\node[$(parse_args(String[], text.props))] at ($(text.x), $(text.y)) {$(text.text)};"
-end
-
-annotate(node::Node, text; offsetx=0, offsety=0, kwargs...) = PlainText(node.x+offsetx, node.y+offsety, text; kwargs...)
 
 # TODO
 # arc: \draw (3mm,0mm) arc (0:30:3mm);  0deg-30deg, radius=3mm

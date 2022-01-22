@@ -5,7 +5,7 @@ using TikzGenerator, Test
     @test command(n) isa String
     m = Node(0.6, 0.5)
     @test command(n) isa String
-    l = Line(m, Controls(m, (0.3, 0.4), n), Controls(m, (0.2, 0.3), (0.3, 0.4), n), n, Cycle(); arrow="->", annotate="A")
+    l = Path(m, Controls(m, (0.3, 0.4), n), Controls(m, (0.2, 0.3), (0.3, 0.4), n), n, segment, Cycle(); arrow="->", annotate="A")
     @test command(n) isa String
     g = Mesh(0, 10, 0, 10)
     @test command(g) isa String
