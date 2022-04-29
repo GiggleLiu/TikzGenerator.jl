@@ -94,8 +94,8 @@ struct Grid <: AbstractOperation
     props::Dict{String, String}
 end
 # style "help lines" is equal to "gray, verythin"
-@interface function Grid(; xstep::Real, ystep::Real)
-    Grid(build_props(:Grid, _properties...))
+@interface function Grid(; xstep::Real, ystep::Real, kwargs...)
+    Grid(build_props(:Grid; _properties...))
 end
 operation_command(g::Grid) = "grid [$(parse_args(String[], g.props))]"
 
@@ -121,6 +121,7 @@ end
         0<=line_width::Real<Inf = 0.014,
         bend_left::Real=0,
         bend_right::Real=0,
+        kwargs...
     )
     _properties = _remove(_properties, :arrow, :line_style, :loop, :color)
     Edg(arrow, color, line_style, loop, build_props(:Edg; _properties...))
@@ -139,7 +140,7 @@ struct Line <: AbstractOperation
     props::Dict{String,String}
 end
 
-@interface function Line(; out::Real=0, in::Real=0, bend_right::Real=0, bend_left::Real=0)
+@interface function Line(; out::Real=0, in::Real=0, bend_right::Real=0, bend_left::Real=0, kwargs...)
     Line(build_props(:Line; _properties...))
 end
 operation_command(s::Line) = "to [$(parse_args(String[], s.props))]"
@@ -194,7 +195,7 @@ end
         rounded_corners::Real>=0=0,
 
         # fill
-        fill::String = "",
+        fill::Union{Bool,String} = false,
         fill_opacity::Real = 1,
 
         # draw
@@ -204,7 +205,12 @@ end
         # other styles
         clip::Bool = false,
         use_as_bounding_box::Bool = false,
-        pattern::String ∈ ["dots", "fivepointed stars", "bricks", ""] = "",
+        pattern::String ∈ ["dots", "bricks",
+                        "north east lines", "north west lines",
+                        "crosshatch", "crosshatch dots",
+                        "horizontal lines", "vertical lines", "grid",
+                        "fivepointed stars", "sixpointed stars", ""
+                        ] = "",
         pattern_color::String = "",
 
         # snake

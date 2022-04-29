@@ -1,5 +1,5 @@
-function mesh!(canvas::Canvas, xmin, xmax, ymin, ymax)
-    element = Path(MoveTo(xmin-1e-3, ymin-1e-3), Grid(xstep=step, ystep=step), MoveTo(xmax, ymax))
+function mesh!(canvas::Canvas, xmin, xmax, ymin, ymax, step; draw="black", kwargs...)
+    element = Path(MoveTo(xmin-1e-3, ymin-1e-3), Grid(xstep=step, ystep=step), MoveTo(xmax, ymax); draw, kwargs...)
     push!(canvas, element); element
 end
 function circle!(canvas::Canvas, x, y, radius; annotate="", id=autoid!(), kwargs...)
@@ -7,7 +7,7 @@ function circle!(canvas::Canvas, x, y, radius; annotate="", id=autoid!(), kwargs
     push!(canvas, element); element
 end
 function rectangle!(canvas::Canvas, x, y, width, height; annotate="", id=autoid!(), kwargs...)
-    element = Path(MoveTo(x, y), shape, Node(annotate=annotate, id=id), MoveTo(x+width, y+height); inner_sep=0, kwargs...)
+    element = Path(MoveTo(x, y), Rectangle(), Node(annotate=annotate, id=id), MoveTo(x+width, y+height); inner_sep=0, kwargs...)
     push!(canvas, element); element
 end
 function vertex!(canvas::Canvas, x, y; shape="", annotate="", id=autoid!(), kwargs...)
@@ -22,6 +22,18 @@ function edge!(canvas::Canvas, a, b; annotate="", kwargs...)
     end
     push!(canvas, element); element
 end
+function line!(canvas::Canvas, a, b; annotate="", kwargs...)
+    element = if isempty(annotate)
+        Path(a, Line(;kwargs...), b)
+    else
+        Path(a, Line(;kwargs...), Node(annotate=annotate), b)
+    end
+    push!(canvas, element); element
+end
+function text!(canvas::Canvas, x, y, str::String; kwargs...)
+    vertex!(canvas, x, y; annotate=str, kwargs...)
+end
+
 function Base.push!(canvas::Canvas, element)
     push!(canvas.contents, element)
     return canvas

@@ -2,7 +2,7 @@ module TikzGenerator
 
 export rgbcolor!, Node, Line, Mesh, Edg, Canvas, >>, command, canvas, generate_standalone, StringElement, PlainText, uselib!
 export Cycle, Controls, annotate, Annotate, autoid!, vizgraph!, writepdf
-export mesh!, circle!, rectangle!, edge!, vertex!, command!
+export mesh!, circle!, rectangle!, edge!, vertex!, text!, line!
 
 include("macros.jl")
 include("Core.jl")

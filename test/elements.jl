@@ -14,6 +14,8 @@ using TikzGenerator: operation_command
     @test operation_command(edge) isa String
     line = TikzGenerator.Line()
     @test operation_command(line) isa String
+    grid = TikzGenerator.Grid(; xstep=0.1, ystep=0.1)
+    @test operation_command(grid) isa String
     controls = TikzGenerator.Controls(TikzGenerator.MoveTo(0.3, 0.4))
     @test operation_command(controls) isa String
 end
