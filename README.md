@@ -2,6 +2,8 @@
 
 A work in progress Julia wrapper for generating [Tikz](https://en.m.wikipedia.org/wiki/PGF/TikZ) scripts.
 
+(You can star, watch or contribute to this repo, but do not use it before this line has been removed to save your time)
+
 [![Build Status](https://github.com/GiggleLiu/TikzGenerator.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/GiggleLiu/TikzGenerator.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 Tikz is a professional tool for creating production quality vector graphs in papers.
