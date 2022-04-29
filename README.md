@@ -1,12 +1,13 @@
 # TikzGenerator
 
+A work in progress Julia wrapper for generating [Tikz](https://en.m.wikipedia.org/wiki/PGF/TikZ) scripts.
+
 [![Build Status](https://github.com/GiggleLiu/TikzGenerator.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/GiggleLiu/TikzGenerator.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
-Tikz is very powerful in generating graphs in production quality.
-But we also notice it does not provide helpful error information, while its control flows is obscure and very slow.
+Tikz is a professional tool for creating production quality vector graphs in papers.
+But its error information is not helpful, its control flows is obscure and very slow.
 Hence I wrap the tikz library with the following design principles
 
-* not restricting every possibility.
-* error/warn user at early stage.
-* truncate the feature to minimum, then increase it  gradually, e.g. we can custom many fancy arrows in Tikz, however, we decide to warn user on inputs that not known by us.
-* unitless (always in `cm`).
+* completeness, can do everything allowed in tikz.
+* early error, try best to error or warn user at function inputs.
+* unitless, always in `cm`.
