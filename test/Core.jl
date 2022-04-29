@@ -2,8 +2,8 @@ using TikzGenerator, Test
 
 @testset "canvas" begin
     res = canvas() do c
-        Node(0.2, 0.5; draw=rgbcolor!(c, 21, 42, 36)) >> c
-        "jajaja" >> c
+        circle!(c, 0.3, 0.2, 0.1; shape="circle", draw=rgbcolor!(c, 21, 42, 36))
+        push!(c, "jajaja")
     end
     @test res isa Canvas
     @test generate_standalone(res) isa String

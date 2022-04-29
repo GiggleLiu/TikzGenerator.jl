@@ -15,8 +15,16 @@ function canvas(f; header="", libs=String[], colors=Dict{String,Tuple{Int,Int,In
     return canvas
 end
 
-Base.:(>>)(element::AbstractTikzElement, canvas::Canvas) = (push!(canvas.contents, element); element)
-Base.:(>>)(element::String, canvas::Canvas) = (push!(canvas.contents, StringElement(element)); element)
+function canvas(f, filename::String; kwargs...)
+    obj = canvas(f; kwargs...)
+    if endswith(filename, ".pdf")
+        writepdf(filename, obj)
+    elseif endswith(filename, ".svg")
+        writesvg(filename, obj)
+    else
+        write(filename, obj)
+    end
+end
 
 function uselib!(canvas::Canvas, lib::String)
     push!(canvas.libs, lib)
@@ -50,8 +58,15 @@ function Base.write(io::IO, canvas::Canvas)
 end
 
 function writepdf(filename::AbstractString, canvas::Canvas)
-    write(filename, canvas)
-    run(`latexmk -pdf $filename -output-directory=$(dirname(filename))`)
+    tex = filename[1:end-4]*".tex"
+    write(tex, canvas)
+    run(`latexmk -pdf $tex -output-directory=$(dirname(filename))`)
+end
+
+function writesvg(filename::AbstractString, canvas)
+    pdf = filename[1:end-4]*".pdf"
+    writepdf(pdf, canvas)
+    run(`pdf2svg $pdf $filename`)
 end
 
 build_props(fname::Symbol; kwargs...) = update_props!(fname, Dict{String,String}(); kwargs...)

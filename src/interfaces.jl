@@ -1,14 +1,59 @@
+function mesh!(canvas::Canvas, xmin, xmax, ymin, ymax, step; draw="black", kwargs...)
+    element = Path(MoveTo(xmin-1e-3, ymin-1e-3), Grid(xstep=step, ystep=step), MoveTo(xmax, ymax); draw, kwargs...)
+    push!(canvas, element); element
+end
+function circle!(canvas::Canvas, x, y, radius; annotate="", id=autoid!(), kwargs...)
+    element = Path(MoveTo(x, y), Circle(radius), Node(annotate=annotate, id=id); minimum_size=radius, inner_sep=0, kwargs...)
+    push!(canvas, element); element
+end
+function rectangle!(canvas::Canvas, x, y, width, height; annotate="", id=autoid!(), kwargs...)
+    element = Path(MoveTo(x, y), Rectangle(), Node(annotate=annotate, id=id), MoveTo(x+width, y+height); inner_sep=0, kwargs...)
+    push!(canvas, element); element
+end
+function vertex!(canvas::Canvas, x, y; shape="", annotate="", id=autoid!(), kwargs...)
+    element = Path(MoveTo(x, y), Node(annotate=annotate, id=id; shape=shape, kwargs...))
+    push!(canvas, element); element
+end
+function edge!(canvas::Canvas, a, b; annotate="", kwargs...)
+    element = if isempty(annotate)
+        Path(a, Edg(;kwargs...), b)
+    else
+        Path(a, Edg(;kwargs...), Node(annotate=annotate), b)
+    end
+    push!(canvas, element); element
+end
+function line!(canvas::Canvas, a, b; annotate="", kwargs...)
+    element = if isempty(annotate)
+        Path(a, Line(;kwargs...), b)
+    else
+        Path(a, Line(;kwargs...), Node(annotate=annotate), b)
+    end
+    push!(canvas, element); element
+end
+function text!(canvas::Canvas, x, y, str::String; kwargs...)
+    vertex!(canvas, x, y; annotate=str, kwargs...)
+end
+
+function Base.push!(canvas::Canvas, element)
+    push!(canvas.contents, element)
+    return canvas
+end
+function Base.push!(canvas::Canvas, str::String)
+    push!(canvas.contents, StringElement(str))
+    return canvas
+end
+
 function vizgraph!(c::Canvas, locations::AbstractVector, edges; fills=fill("black", length(locations)),
         texts=fill("", length(locations)), ids=[autoid!() for i=1:length(locations)], minimum_size=0.4,
-        draw="", line_width=0.03, edgecolors=fill("black", length(edges)))
-    nodes = Node[]
-    lines = Line[]
+        draws=fill("", length(locations)), line_width=0.03, edgecolors=fill("black", length(edges)))
+    nodes = Path[]
+    lines = Path[]
     for i=1:length(locations)
-        n = Node(locations[i]...; fill=fills[i], minimum_size=minimum_size, draw=draw, id=ids[i], text=texts[i]) >> c
+        n = vertex!(c, locations[i]...; shape="circle", fill=fills[i], minimum_size=minimum_size, draw=draws[i], id=ids[i], annotate=texts[i])
         push!(nodes, n)
     end
     for (k, (i, j)) in enumerate(edges)
-        l = Line(nodes[i], nodes[j], line_width=line_width, draw=edgecolors[k]) >> c
+        l = edge!(c, nodes[i], nodes[j], line_width=line_width, color=edgecolors[k])
         push!(lines, l)
     end
     return nodes, lines
