@@ -2,7 +2,7 @@
 struct StringElement <: AbstractTikzElement
     str::String
 end
-operation_command(s::StringElement) = s.str
+command(s::StringElement) = s.str
 
 # serve for node id
 const instance_counter = Ref(0)
@@ -84,7 +84,7 @@ function operation_command(node::Node)
             @nodefault(node.shape, default_values[:shape]),
             ifelse(node.sloped==default_values[:sloped], "", "sloped")],
             node.props)
-    return "node [$annargs] ($(node.id)) {$(node.annotate)}"
+    return "node($(node.id)) [$annargs] {$(node.annotate)}"
 end
 
 struct Cycle <: AbstractOperation end
@@ -140,14 +140,14 @@ struct Line <: AbstractOperation
 end
 
 @interface function Line(; out::Real=0, in::Real=0, bend_right::Real=0, bend_left::Real=0)
-    Line(build_props(_properties))
+    Line(build_props(:Line; _properties...))
 end
 operation_command(s::Line) = "to [$(parse_args(String[], s.props))]"
 
 struct Controls <: AbstractOperation
     controls::Vector{String}
-    Controls(c1) = new([operation_command(c1)])
-    Controls(c1, c2) = new([operation_command(c1), operation_command(c2)])
+    Controls(c1::AbstractOperation) = new([operation_command(c1)])
+    Controls(c1::AbstractOperation, c2::AbstractOperation) = new([operation_command(c1), operation_command(c2)])
 end
 
 struct Path <: AbstractTikzElement

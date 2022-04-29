@@ -15,9 +15,6 @@ function canvas(f; header="", libs=String[], colors=Dict{String,Tuple{Int,Int,In
     return canvas
 end
 
-Base.:(>>)(element::AbstractTikzElement, canvas::Canvas) = (push!(canvas.contents, element); element)
-Base.:(>>)(element::String, canvas::Canvas) = (push!(canvas.contents, StringElement(element)); element)
-
 function uselib!(canvas::Canvas, lib::String)
     push!(canvas.libs, lib)
     return lib
