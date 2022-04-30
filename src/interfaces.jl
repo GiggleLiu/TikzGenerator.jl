@@ -58,3 +58,23 @@ function vizgraph!(c::Canvas, locations::AbstractVector, edges; fills=fill("blac
     end
     return nodes, lines
 end
+
+function rotate(vec::Tuple, angle::Real)
+    s, c = sincos(angle)
+    (c * vec[1] - s * vec[2], s * vec[1] + c * vec[2])
+end
+
+function normalize(vec::Tuple)
+    n = vec[1]^2 + vec[2]^2
+    vec ./ sqrt(n)
+end
+
+function midway(start::Tuple, stop::Tuple)
+    (start .+ stop) ./ 2
+end
+
+function brace!(c::Canvas, start::Tuple, stop::Tuple, text::String=""; mirror::Bool=false, draw="black", thick::Bool=true, raise::Real=0.5, text_offset::Real=0.5)
+    vec = rotate(normalize(stop .- start), π/2)
+    text!(c, midway(start, stop) .+ (mirror ? (-).(vec) : vec) .* (raise + text_offset)..., text)
+    edge!(c, start, stop; decoration="{brace,$(mirror ? "mirror," : "")raise=$(raise)cm}",decorate=true, thick, draw)
+end
