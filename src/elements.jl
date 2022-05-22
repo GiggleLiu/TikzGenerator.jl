@@ -146,9 +146,9 @@ end
 operation_command(s::Line) = "to [$(parse_args(String[], s.props))]"
 
 struct Controls <: AbstractOperation
-    controls::Vector{String}
-    Controls(c1::AbstractOperation) = new([operation_command(c1)])
-    Controls(c1::AbstractOperation, c2::AbstractOperation) = new([operation_command(c1), operation_command(c2)])
+    controls::NTuple{M,AbstractOperation} where M
+    Controls(c1) = new((render_id(c1),))
+    Controls(c1, c2) = new((render_id(c1), render_id(c2)))
 end
 
 struct Path <: AbstractTikzElement
@@ -248,7 +248,7 @@ function render_id(x::Path)
     error("can not find any id in path: $(x)")
 end
 function operation_command(c::Controls)
-    ".. controls $(join(["$c" for c in c.controls], " and ")) .."
+    ".. controls $(join([operation_command(c) for c in c.controls], " and ")) .."
 end
 function command(path::Path)
     default_values = TIKZ_DEFAULT_VALUES[:Path]
@@ -259,11 +259,10 @@ function command(path::Path)
     if path.shorten_left !== default_values[:shorten_left]
         props["shorten <"] = path.shorten_left
     end
-    @show props
     head = "\\path[$(parse_args([@nodefault(path.arrow, default_values[:arrow]),
                     @nodefault(path.shape, default_values[:shape]),
                     ifelse(path.clip, "clip", ""),
-                    ifelse(path.use_as_bounding_box, "use_as_bounding_box", ""),
+                    ifelse(path.use_as_bounding_box, "use as bounding box", ""),
                     @nodefault(path.line_style, default_values[:line_style])],
                     props))]"
     args = join(operation_command.(path.path), " ")

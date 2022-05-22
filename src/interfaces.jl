@@ -22,6 +22,16 @@ function edge!(canvas::Canvas, a, b; annotate="", kwargs...)
     end
     push!(canvas, element); element
 end
+
+function curve!(canvas::Canvas, locs...; annotate="", kwargs...)
+    element = if isempty(annotate)
+        Path(locs[1], Controls(locs[2:end-1]...), locs[end]; kwargs...)
+    else
+        Path(locs[1], Controls(locs[2:end-1]...), locs[end], Node(annotate=annotate); kwargs...)
+    end
+    push!(canvas, element); element
+end
+
 function line!(canvas::Canvas, a, b; annotate="", kwargs...)
     element = if isempty(annotate)
         Path(a, Line(;kwargs...), b)
@@ -45,11 +55,13 @@ end
 
 function vizgraph!(c::Canvas, locations::AbstractVector, edges; fills=fill("black", length(locations)),
         texts=fill("", length(locations)), ids=[autoid!() for i=1:length(locations)], minimum_size=0.4,
-        draws=fill("", length(locations)), line_width=0.03, edgecolors=fill("black", length(edges)))
+        draws=fill("", length(locations)), line_width=0.03, edgecolors=fill("black", length(edges)),
+        vertex_line_width=0.03,
+       )
     nodes = Path[]
     lines = Path[]
     for i=1:length(locations)
-        n = vertex!(c, locations[i]...; shape="circle", fill=fills[i], minimum_size=minimum_size, draw=draws[i], id=ids[i], annotate=texts[i])
+        n = vertex!(c, locations[i]...; shape="circle", fill=fills[i], minimum_size=minimum_size, draw=draws[i], id=ids[i], annotate=texts[i], line_width=vertex_line_width)
         push!(nodes, n)
     end
     for (k, (i, j)) in enumerate(edges)
