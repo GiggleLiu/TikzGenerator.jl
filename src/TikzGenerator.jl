@@ -8,5 +8,6 @@ include("macros.jl")
 include("Core.jl")
 include("elements.jl")
 include("interfaces.jl")
+include("alghub.jl")
 
 end

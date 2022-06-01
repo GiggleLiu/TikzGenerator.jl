@@ -12,3 +12,7 @@ end
 @testset "elements" begin
     include("elements.jl")
 end
+
+@testset "alghub" begin
+    include("alghub.jl")
+end
