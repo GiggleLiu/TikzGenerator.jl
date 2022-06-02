@@ -66,8 +66,8 @@ struct Node <: AbstractOperation
 end
 @interface function Node(;
         shape::String = "",
-        anchor::String ∈ ["midway", "near end", "at end", "very near end", "near start", "very near start", "at start"]="midway",
-        placement::String ∈ ["above left, above, above right, left, right, below left, below, below right", ""] ="",
+        anchor::String ∈ anchor_styles ="midway",
+        placement::String ∈ placement_styles ="",
         sloped=false,
         id::String=autoid!(),
         annotate::String="",
@@ -107,16 +107,9 @@ struct Edg <: AbstractOperation
     props::Dict{String,String}
 end
 @interface function Edg(;
-        arrow::String ∈ ["->", "<-","<->", "->>", "<<-", 
-            "-stealth", "stealth-", "stealth-stealth",
-            "-latex", "latex-", "latex-latex",
-            "->|", "|<-", "|<->|",
-            "-"] ="-",
-        line_style::String ∈ ["solid",
-            "dashed", "densely dashed", "loosely dashed",
-            "dotted", "densely dotted", "loosely dotted",
-            "dash dot", "dash dot dot"] ="solid",
-        loop::String ∈ ["", "loop", "loop above", "loop below", "loop left", "loop right", "every loop"] = "",
+        arrow::String ∈ arrow_styles ="-",
+        line_style::String ∈ line_styles ="solid",
+        loop::String ∈ loop_styles = "",
         color::String="black",
         0<=line_width::Real<Inf = 0.014,
         bend_left::Real=0,
@@ -153,13 +146,6 @@ end
 
 struct Path <: AbstractTikzElement
     path::NTuple{M,AbstractOperation} where M
-    shape::String
-    arrow::String
-    line_style::String
-    use_as_bounding_box::Bool
-    clip::Bool
-    shorten_right::Float64
-    shorten_left::Float64
     props::Dict{String,String}
 end
 
@@ -176,23 +162,16 @@ end
 # TODO:
 # * `dash_phase` and `dash pattern`
 @interface function Path(path...;
-        arrow::String ∈ ["->", "<-","<->", "->>", "<<-", 
-            "-stealth", "stealth-", "stealth-stealth",
-            "-latex", "latex-", "latex-latex",
-            "->|", "|<-", "|<->|",
-            "-"] ="-",
-        line_width::Real >= 0 = 0.014,   # in cm, equals to 0.4pt
-        line_style::String ∈ ["solid",
-            "dashed", "densely dashed", "loosely dashed",
-            "dotted", "densely dotted", "loosely dotted",
-            "dash dot", "dash dot dot"] ="solid",
-        miter_limit::Real>0=10,
+        arrow::String ="-",
+        line_width::Real = 0.014,   # in cm, equals to 0.4pt
+        line_style::String = "solid",
+        miter_limit::Real=10,
         shape::String="",
         shorten_left::Real = 0.0,
         shorten_right::Real = 0.0,
-        join::String ∈ ["round", "bevel", "miter"]="miter",
-        cap::String ∈ ["rect", "butt", "round"]="butt",
-        rounded_corners::Real>=0=0,
+        join::String ="miter",
+        cap::String ="butt",
+        rounded_corners::Real=0,
 
         # fill
         fill::Union{Bool,String} = false,
@@ -205,16 +184,11 @@ end
         # other styles
         clip::Bool = false,
         use_as_bounding_box::Bool = false,
-        pattern::String ∈ ["dots", "bricks",
-                        "north east lines", "north west lines",
-                        "crosshatch", "crosshatch dots",
-                        "horizontal lines", "vertical lines", "grid",
-                        "fivepointed stars", "sixpointed stars", ""
-                        ] = "",
+        pattern::String = "",
         pattern_color::String = "",
 
         # snake
-        snake::String ∈ ["snake", "saw", "coil", "brace", "bumps", ""] = "",
+        snake::String = "",
         segment_aspect::Real=0,
         segment_length::Real=0.2,
         segment_amplitude::Real=0.04,
@@ -224,17 +198,31 @@ end
         # we do not introduce shift because this can be done in Julia
         rotate::Real=0,
 
-        inner_sep::Real >= 0 = @not_tikz_default(0),       # in cm
-        minimum_size::Real >= 0 = 0,  # in cm
+        inner_sep::Real = @not_tikz_default(0),       # in cm
+        minimum_size::Real = 0,  # in cm
         top_color::String="",           # shading
         bottom_color::String="",
         left_color::String="",
-        right_color::String="",
-
-        kwargs...)
-    _properties = _remove(_properties, :arrow, :line_style, :shorten_left, :shorten_right, :clip, :use_as_bounding_box, :shape)
+        right_color::String=""
+        )
+    @assert begin
+        arrow ∈ arrow_styles &&
+        line_style ∈ line_styles &&
+        join ∈ join_styles &&
+        smake ∈ snake_styles &&
+        pattern ∈ pattern_styles
+    end
+    _properties = (;
+        shape, arrow, line_style, shorten_right, shorten_left,  # positional
+        cap,
+        fill, fill_opacity, draw, draw_opacity, pattern_color,
+        snake, segment_amplitude, segment_aspect, segment_length, line_after_snake,
+        rotate,
+        top_color, bottom_color, left_color, right_color,
+        use_as_bounding_box, clip  # boolean
+    )
     props = build_props(:Path; _properties...)
-    Path(render_id.(path), shape, arrow, line_style, use_as_bounding_box, clip, shorten_left, shorten_right, props)
+    Path(render_id.(path), shape, arrow, line_style, shorten_left, shorten_right, props)
 end
 render_id(x) = x
 render_id(x::String) = MoveToId(x)
