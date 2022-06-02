@@ -81,7 +81,8 @@ function update_props!(fname::Symbol, dict::Dict; kwargs...)
 end
 
 function parse_args(args::Vector, kwargs::Dict)  # properties
-    return join([filter(!isempty, args)..., ["$k=$(_render_val(k, v))" for (k,v) in kwargs if !isempty(v)]...], ", ")
+    # NOTE: booleans are flag
+    return join([filter(!isempty, args)..., [v isa Bool ? "$k" : "$k=$(_render_val(k, v))" for (k,v) in kwargs if !isempty(v)]...], ", ")
 end
 function _render_val(k, v::Real)
     if k ∈ [:line_width, :minimum_size, :inner_sep]
