@@ -75,6 +75,9 @@ end
         minimum_size::Real=0,
         line_style::String="solid",
         opacity::Real=1,
+        align::String="",
+        text_width::Real=0,
+        inner_sep::Real = 0.140584,  # in cm, 0.3333em
         #radius::Real=0.0   #
     )
     @assert begin
@@ -82,7 +85,7 @@ end
         placement ∈ placement_styles
     end
     args = build_args(:Node; anchor, placement, sloped, shape, line_style)
-    props = build_props(:Node; fill, draw, text, line_width, minimum_size, opacity)
+    props = build_props(:Node; fill, draw, text, line_width, minimum_size, opacity, align, text_width, inner_sep)
     return Node(id, annotate, args, props)
 end
 
@@ -111,7 +114,7 @@ end
         arrow::String ="-",
         line_style::String ="solid",
         loop::String = "",
-        color::String="black",
+        draw::String="black",
         line_width::Real = 0.014,
         bend_left::Real=0,
         bend_right::Real=0,
@@ -121,7 +124,7 @@ end
         line_style ∈ line_styles &&
         loop ∈ loop_styles
     end
-    Edg(build_args(:Edg; arrow, line_style, loop, color), build_props(:Edg; line_width, bend_left, bend_right))
+    Edg(build_args(:Edg; arrow, line_style, loop, draw), build_props(:Edg; line_width, bend_left, bend_right))
 end
 function operation_command(edge::Edg)
     edgeargs = parse_args(edge.args, edge.props)
@@ -184,6 +187,8 @@ end
         # draw
         draw::String = "",
         draw_opacity::Real = 1,
+        bend_left::Real = 0,
+        bend_right::Real = 0,
 
         # other styles
         clip::Bool = false,
@@ -219,7 +224,7 @@ end
     args = build_args(:Path; arrow, shape, clip, line_style, use_as_bounding_box)
     props = build_props(:Path;
         miter_limit, shorten_right, shorten_left, line_width,  # positional
-        cap, rounded_corners,
+        cap, rounded_corners, bend_left, bend_right,
         fill, fill_opacity, draw, draw_opacity, pattern_color,
         snake, segment_amplitude, segment_aspect, segment_length, line_after_snake,
         rotate,

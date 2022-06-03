@@ -65,7 +65,7 @@ function vizgraph!(c::Canvas, locations::AbstractVector, edges; fills=fill("blac
         push!(nodes, n)
     end
     for (k, (i, j)) in enumerate(edges)
-        l = edge!(c, nodes[i], nodes[j], line_width=line_width, color=edgecolors[k])
+        l = edge!(c, nodes[i], nodes[j], line_width=line_width, draw=edgecolors[k])
         push!(lines, l)
     end
     return nodes, lines
