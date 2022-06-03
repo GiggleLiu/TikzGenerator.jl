@@ -18,5 +18,7 @@ using TikzGenerator: operation_command
     @test operation_command(grid) isa String
     controls = TikzGenerator.Controls(TikzGenerator.MoveTo(0.3, 0.4))
     @test operation_command(controls) isa String
+
+    @test_throws AssertionError Node(line_style="soli")
 end
 

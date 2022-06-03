@@ -1,5 +1,3 @@
-using MatchCore
-
 const TIKZ_DEFAULT_VALUES = Dict{Symbol,Dict{Symbol, Any}}()
 const ARG_EXTRA_DOCS = Dict{Symbol,String}()
 
@@ -9,7 +7,7 @@ const ARG_EXTRA_DOCS = Dict{Symbol,String}()
 Analyze a function expression, returns a tuple of `(macros, function name, arguments, type parameters (in where {...}), statements in the body)`
 """
 function match_function(ex)
-    @smatch ex begin
+    @match ex begin
         :(function $(fname)($(args...)) $(body...) end) ||
         :($fname($(args...)) = $(body...)) => (nothing, fname, args, [], body)
         Expr(:function, :($fname($(args...)) where {$(ts...)}), xbody) => (nothing, fname, args, ts, xbody.args)
@@ -28,22 +26,16 @@ function generate_function(mc, fname, args, ts, body)
     return fdef
 end
 
-function checkarg(ex, exval, x, xval)
-    if !exval
-        throw(ArgumentError("Argument verification fail, expect `$(ex)`, got `$x = $xval`."))
-    end
-end
-
-function inspect_arg!(arg, docstrings, kwdocstrings, verifiers, default_values, argforward, iskw)
+function inspect_arg!(arg, docstrings, kwdocstrings, default_values, argforward, iskw)
     _docstrings = iskw ? kwdocstrings : docstrings
-    @smatch arg begin
+    @match arg begin
         Expr(:parameters, kwargs...) => begin
-            Expr(:parameters, [inspect_arg!(kwargs[i], docstrings, kwdocstrings, verifiers, default_values, argforward, true) for i=1:length(kwargs)]...)
+            Expr(:parameters, [inspect_arg!(kwargs[i], docstrings, kwdocstrings, default_values, argforward, true) for i=1:length(kwargs)]...)
         end
         Expr(:kw, x, val) => begin
             xsym = argname(x)
             _val = unquote(val)
-            __val = @smatch _val begin
+            __val = @match _val begin
                 :(@not_tikz_default $line $vv) => vv
                 ::Union{String, Number} => begin
                     default_values[xsym] = _val
@@ -51,26 +43,10 @@ function inspect_arg!(arg, docstrings, kwdocstrings, verifiers, default_values, 
                 end
                 _ => _val
             end
-            rt = Expr(:kw, inspect_arg!(x, docstrings, kwdocstrings, verifiers, default_values, argforward, iskw), __val)
+            rt = Expr(:kw, inspect_arg!(x, docstrings, kwdocstrings, default_values, argforward, iskw), __val)
             # store default values
             _docstrings[end] *= ", default value is `$(_repr(__val))`"
             rt
-        end
-        #:($x=$val) => :($(inspect_arg!(x, docstrings, verifiers)) = $val)
-        Expr(:comparison, a, op1, x, op2, b) ||
-        :($x < $a) || :($x <= $a) || :($x > $a) || :($x >= $a) ||
-        :($x ∈ $y) || :($x in $y) => begin
-            xx = argname(x)
-            aarg = comparename(arg)
-            d = "* `$x` s.t. `$(aarg)`"
-            # fetch extra docstrings
-            if haskey(ARG_EXTRA_DOCS, xx)
-                d *= ", $(ARG_EXTRA_DOCS[xx])"
-            end
-            push!(_docstrings, d)
-            iskw && push!(argforward, Expr(:(=), xx, xx))
-            push!(verifiers, :($checkarg($(QuoteNode(aarg)), $aarg, $(QuoteNode(xx)), $xx)))
-            x
         end
         Expr(:..., xs) => begin
             push!(_docstrings, "* ...")
@@ -91,7 +67,7 @@ function inspect_arg!(arg, docstrings, kwdocstrings, verifiers, default_values, 
 end
 
 # fix line break in argument list
-unquote(ex) = @smatch ex begin
+unquote(ex) = @match ex begin
     Expr(:block, line, arg) => begin
         @assert line isa LineNumberNode
         unquote(arg)
@@ -99,30 +75,40 @@ unquote(ex) = @smatch ex begin
     _ => ex
 end
 # fix function call type input arguments
-_repr(val) = @smatch val begin
+_repr(val) = @match val begin
     ::Expr => string(val)
     _ => repr(val)
 end
-
-argname(ex) = @smatch ex begin
-    Expr(:comparison, a, op1, x, op2, b) || :($op($x, $a)) => argname(x)
+argname(ex) = @match ex begin
     :($x::$TPYE) => x
     ::Symbol => ex
-end
-comparename(ex) = @smatch ex begin
-    Expr(:comparison, a, op1, x, op2, b) => Expr(:comparison, a, op1, argname(x), op2, b)
-    :($op($x, $a)) => :($op($(argname(x)), $a))
 end
 
 macro interface(ex)
     mc, fname, args, ts, body = match_function(ex)
-    docstrings, kwdocstrings, verifiers = String[], String[], Expr[]
+    docstrings, kwdocstrings = String[], String[]
+
+    # update default values and docstrings
     default_values, argforward = Dict{Symbol,Any}(), Any[]
-    new_args = [inspect_arg!(arg, docstrings, kwdocstrings, verifiers, default_values, argforward, false) for arg in args]
+    for arg in args
+        inspect_arg!(arg, docstrings, kwdocstrings, default_values, argforward, false)
+    end
     TIKZ_DEFAULT_VALUES[fname] = default_values
     docstring = "Arguments\n---------------\n" * join(docstrings, "\n") * "\n \nKeyword arguments\n-----------------\n" * join(kwdocstrings, "\n")
-    kwargs = Expr(:tuple, argforward...)
-    new_body = [verifiers..., :(_properties = $kwargs), body...]
-    fdef = generate_function(mc, fname, new_args, ts, new_body)
+
+    fdef = generate_function(mc, fname, args, ts, body)
     return esc(Expr(:block, :(Base.@__doc__ $fdef), :(@doc $docstring $fname)))
+end
+
+macro check(ex)
+    esc(check_iml(ex))
+end
+
+function check_iml(ex)
+    @match ex begin
+        :($x ∈ $y) ||
+        :($x in $y) => :(@assert $x ∈ $y "value of `$($(QuoteNode(x)))`: `$($(x))` is not in $($(y))!")
+        :(begin $(args...) end) => :(begin $(check_iml.(args)...) end)
+        ::LineNumberNode => ex
+    end
 end

@@ -75,16 +75,19 @@ end
         minimum_size::Real=0,
         line_style::String="solid",
         opacity::Real=1,
-        align::String="",
+        align::String="center",
         text_width::Real=0,
+        use_as_bounding_box::Bool=false,
         inner_sep::Real = 0.140584,  # in cm, 0.3333em
         #radius::Real=0.0   #
     )
-    @assert begin
-        anchor ∈ anchor_styles &&
+    @check begin
+        anchor ∈ anchor_styles
+        line_style ∈ line_styles
         placement ∈ placement_styles
+        align ∈ align_styles
     end
-    args = build_args(:Node; anchor, placement, sloped, shape, line_style)
+    args = build_args(:Node; anchor, placement, sloped, shape, line_style, use_as_bounding_box)
     props = build_props(:Node; fill, draw, text, line_width, minimum_size, opacity, align, text_width, inner_sep)
     return Node(id, annotate, args, props)
 end
@@ -119,9 +122,9 @@ end
         bend_left::Real=0,
         bend_right::Real=0,
     )
-    @assert begin
-        arrow ∈ arrow_styles &&
-        line_style ∈ line_styles &&
+    @check begin
+        arrow ∈ arrow_styles
+        line_style ∈ line_styles
         loop ∈ loop_styles
     end
     Edg(build_args(:Edg; arrow, line_style, loop, draw), build_props(:Edg; line_width, bend_left, bend_right))
@@ -181,7 +184,7 @@ end
         rounded_corners::Real=0,
 
         # fill
-        fill::Union{Bool,String} = false,
+        fill::String = "",
         fill_opacity::Real = 1,
 
         # draw
@@ -214,11 +217,11 @@ end
         left_color::String="",
         right_color::String=""
         )
-    @assert begin
-        arrow ∈ arrow_styles &&
-        line_style ∈ line_styles &&
-        join ∈ join_styles &&
-        snake ∈ snake_styles &&
+    @check begin
+        arrow ∈ arrow_styles
+        line_style ∈ line_styles
+        join ∈ join_styles
+        snake ∈ snake_styles
         pattern ∈ pattern_styles
     end
     args = build_args(:Path; arrow, shape, clip, line_style, use_as_bounding_box)

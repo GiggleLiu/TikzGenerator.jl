@@ -4,10 +4,10 @@ authors = ["GiggleLiu <cacate0129@gmail.com> and contributors"]
 version = "0.1.0"
 
 [deps]
-MatchCore = "5dd3f0b1-72a9-48ad-ae6e-79f673da005f"
+MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
 
 [compat]
-MatchCore = "0.1"
+MLStyle = "0.4"
 julia = "1"
 
 [extras]

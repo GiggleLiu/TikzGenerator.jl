@@ -84,7 +84,10 @@ build_args(fname::Symbol; kwargs...) = update_args!(fname, String[]; kwargs...)
 function update_args!(fname::Symbol, args::AbstractVector{String}; kwargs...)
     default_values = TIKZ_DEFAULT_VALUES[fname]
     for (k,v) in kwargs
-        if !(haskey(default_values, k) && default_values[k] == v)
+        # boolean variables are signals
+        if v isa Bool && v
+            push!(args, replace(string(k), "_"=>" "))
+        elseif !(haskey(default_values, k) && default_values[k] == v)
             push!(args, string(v))
         end
     end

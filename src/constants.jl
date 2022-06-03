@@ -27,3 +27,5 @@ const pattern_styles = ["dots", "bricks",
                         "horizontal lines", "vertical lines", "grid",
                         "fivepointed stars", "sixpointed stars", ""
                         ]
+
+align_styles = ["left", "center", "right"]
