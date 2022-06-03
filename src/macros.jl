@@ -126,7 +126,3 @@ macro interface(ex)
     fdef = generate_function(mc, fname, new_args, ts, new_body)
     return esc(Expr(:block, :(Base.@__doc__ $fdef), :(@doc $docstring $fname)))
 end
-
-macro nodefault(a, b)
-    return esc(:(ifelse($a == $b, "", $a)))
-end

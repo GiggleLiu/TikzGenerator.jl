@@ -4,7 +4,7 @@ function udg(filename="_local/udg.svg")
     function node!(c, x, y, style; kwargs...)
         if style == 1
             v = vertex!(c, x, y; shape="circle", minimum_size=0.3, fill="red", draw="none")
-            vertex!(c, x, y; shape="circle", minimum_size=3, fill=rgbcolor!(c, 255, 200, 200), draw=rgbcolor!(c, 160, 100, 100), line_width=0.01, dashed=true, opacity=0.4)
+            vertex!(c, x, y; shape="circle", minimum_size=3, fill=rgbcolor!(c, 255, 200, 200), draw=rgbcolor!(c, 160, 100, 100), line_width=0.01, line_style="dashed", opacity=0.4)
         else
             v = vertex!(c, x, y; shape="circle", minimum_size=0.2, fill="white", draw="black", line_width=0.03)
         end

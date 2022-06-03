@@ -56,34 +56,38 @@ function operation_command(c::Coordinate)
 end
 
 struct Node <: AbstractOperation
-    shape::String
-    anchor::String
-    placement::String
-    sloped::Bool
     id::String
     annotate::String
+    args::Vector{String}
     props::Dict{String, String}
 end
 @interface function Node(;
         shape::String = "",
-        anchor::String ∈ anchor_styles ="midway",
-        placement::String ∈ placement_styles ="",
+        anchor::String ="midway",
+        placement::String ="",
         sloped=false,
         id::String=autoid!(),
         annotate::String="",
-        kwargs...
+        fill::String="",
+        draw::String="",
+        text::String="",
+        line_width::Real=0.014,
+        minimum_size::Real=0,
+        line_style::String="solid",
+        opacity::Real=1,
+        #radius::Real=0.0   #
     )
-    _properties = _remove(_properties, :shape, :annotate, :id, :anchor, :placement, sloped)
-    props = build_props(:Node; _properties...)
-    return Node(shape, anchor, placement, sloped, id, annotate, props)
+    @assert begin
+        anchor ∈ anchor_styles &&
+        placement ∈ placement_styles
+    end
+    args = build_args(:Node; anchor, placement, sloped, shape, line_style)
+    props = build_props(:Node; fill, draw, text, line_width, minimum_size, opacity)
+    return Node(id, annotate, args, props)
 end
+
 function operation_command(node::Node)
-    default_values = TIKZ_DEFAULT_VALUES[:Node]
-    annargs = parse_args([@nodefault(node.anchor, default_values[:anchor]),
-            @nodefault(node.placement, default_values[:placement]),
-            @nodefault(node.shape, default_values[:shape]),
-            ifelse(node.sloped==default_values[:sloped], "", "sloped")],
-            node.props)
+    annargs = parse_args(node.args, node.props)
     return "node($(node.id)) [$annargs] {$(node.annotate)}"
 end
 
@@ -94,47 +98,43 @@ struct Grid <: AbstractOperation
     props::Dict{String, String}
 end
 # style "help lines" is equal to "gray, verythin"
-@interface function Grid(; xstep::Real, ystep::Real, kwargs...)
-    Grid(build_props(:Grid; _properties...))
+@interface function Grid(; xstep::Real, ystep::Real)
+    Grid(build_props(:Grid; xstep, ystep))
 end
 operation_command(g::Grid) = "grid [$(parse_args(String[], g.props))]"
 
 struct Edg <: AbstractOperation
-    arrow::String
-    color::String
-    line_style::String
-    loop::String
+    args::Vector{String}
     props::Dict{String,String}
 end
 @interface function Edg(;
-        arrow::String ∈ arrow_styles ="-",
-        line_style::String ∈ line_styles ="solid",
-        loop::String ∈ loop_styles = "",
+        arrow::String ="-",
+        line_style::String ="solid",
+        loop::String = "",
         color::String="black",
-        0<=line_width::Real<Inf = 0.014,
+        line_width::Real = 0.014,
         bend_left::Real=0,
         bend_right::Real=0,
-        kwargs...
     )
-    _properties = _remove(_properties, :arrow, :line_style, :loop, :color)
-    Edg(arrow, color, line_style, loop, build_props(:Edg; _properties...))
+    @assert begin
+        arrow ∈ arrow_styles &&
+        line_style ∈ line_styles &&
+        loop ∈ loop_styles
+    end
+    Edg(build_args(:Edg; arrow, line_style, loop, color), build_props(:Edg; line_width, bend_left, bend_right))
 end
 function operation_command(edge::Edg)
-    default_values = TIKZ_DEFAULT_VALUES[:Edg]
-    edgeargs = parse_args([@nodefault(edge.arrow, default_values[:arrow]),
-                            @nodefault(edge.color, default_values[:color]),
-                            @nodefault(edge.line_style, default_values[:line_style]),
-                            @nodefault(edge.loop, default_values[:loop])],
-                            edge.props)
+    edgeargs = parse_args(edge.args, edge.props)
     return "edge [$edgeargs]"
 end
 
 struct Line <: AbstractOperation
+    args::Vector{String}
     props::Dict{String,String}
 end
 
-@interface function Line(; out::Real=0, in::Real=0, bend_right::Real=0, bend_left::Real=0, kwargs...)
-    Line(build_props(:Line; _properties...))
+@interface function Line(; out::Real=0, in::Real=0, bend_right::Real=0, bend_left::Real=0)
+    Line(String[], build_props(:Line; out, in, bend_right, bend_left))
 end
 operation_command(s::Line) = "to [$(parse_args(String[], s.props))]"
 
@@ -146,7 +146,11 @@ end
 
 struct Path <: AbstractTikzElement
     path::NTuple{M,AbstractOperation} where M
+    args::Vector{String}
     props::Dict{String,String}
+    function Path(path::NTuple{M,AbstractOperation} where M, args::Vector{String}, props::Dict{String, String})
+        new(path, args, props)
+    end
 end
 
 # line width map
@@ -198,7 +202,7 @@ end
         # we do not introduce shift because this can be done in Julia
         rotate::Real=0,
 
-        inner_sep::Real = @not_tikz_default(0),       # in cm
+        inner_sep::Real = 0.140584,  # in cm, 0.3333em
         minimum_size::Real = 0,  # in cm
         top_color::String="",           # shading
         bottom_color::String="",
@@ -209,20 +213,19 @@ end
         arrow ∈ arrow_styles &&
         line_style ∈ line_styles &&
         join ∈ join_styles &&
-        smake ∈ snake_styles &&
+        snake ∈ snake_styles &&
         pattern ∈ pattern_styles
     end
-    _properties = (;
-        shape, arrow, line_style, shorten_right, shorten_left,  # positional
-        cap,
+    args = build_args(:Path; arrow, shape, clip, line_style, use_as_bounding_box)
+    props = build_props(:Path;
+        miter_limit, shorten_right, shorten_left, line_width,  # positional
+        cap, rounded_corners,
         fill, fill_opacity, draw, draw_opacity, pattern_color,
         snake, segment_amplitude, segment_aspect, segment_length, line_after_snake,
         rotate,
-        top_color, bottom_color, left_color, right_color,
-        use_as_bounding_box, clip  # boolean
+        inner_sep, minimum_size, top_color, bottom_color, left_color, right_color,
     )
-    props = build_props(:Path; _properties...)
-    Path(render_id.(path), shape, arrow, line_style, shorten_left, shorten_right, props)
+    Path(render_id.(path), args, props)
 end
 render_id(x) = x
 render_id(x::String) = MoveToId(x)
@@ -241,21 +244,20 @@ end
 function command(path::Path)
     default_values = TIKZ_DEFAULT_VALUES[:Path]
     props = copy(path.props)
-    if path.shorten_right !== default_values[:shorten_right]
-        props["shorten >"] = path.shorten_right
+
+    # replace special names
+    if haskey(props, "shorten_right")
+        props["shorten >"] = pop!(props, "shorten_right")
     end
-    if path.shorten_left !== default_values[:shorten_left]
-        props["shorten <"] = path.shorten_left
+    if haskey(props, "shorten_left")
+        props["shorten <"] = pop!(props, "shorten_left")
     end
-    head = "\\path[$(parse_args([@nodefault(path.arrow, default_values[:arrow]),
-                    @nodefault(path.shape, default_values[:shape]),
-                    ifelse(path.clip, "clip", ""),
-                    ifelse(path.use_as_bounding_box, "use as bounding box", ""),
-                    @nodefault(path.line_style, default_values[:line_style])],
-                    props))]"
+
+    head = "\\path[$(parse_args(path.args, props))]"
     args = join(operation_command.(path.path), " ")
     return "$head $args;"
 end
+nodefault(a, b) = ifelse(a == b, "", a)
 
 # TODO
 # arc: \draw (3mm,0mm) arc (0:30:3mm);  0deg-30deg, radius=3mm

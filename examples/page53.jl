@@ -2,7 +2,7 @@ using TikzGenerator
 
 function state_machine()
     #circle!(c, x, y, text) = circle(x, y; radius=0.1 annotate=text, fill="red", draw="none", text="white", line_width=0.03) >> c
-    node!(c, shape, x, y, text; kwargs...) = vertex!(c, x, y; shape=shape, radius=0.1, annotate=text, fill="red", draw="none", text="white", line_width=0.03)
+    node!(c, shape, x, y, text; kwargs...) = vertex!(c, x, y; shape=shape, annotate=text, fill="red", draw="none", text="white", line_width=0.03)
     bond!(c, a, b, text; kwargs...) = edge!(c, a, b; arrow="-stealth", annotate=text, kwargs...)
     node_distance = 5.6
     image = canvas(libs=["automata", "positioning"], args=["auto"]) do c
