@@ -7,6 +7,7 @@ A work in progress Julia wrapper for generating [Tikz](https://en.m.wikipedia.or
 [![Build Status](https://github.com/GiggleLiu/TikzGenerator.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/GiggleLiu/TikzGenerator.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 Tikz is a professional tool for creating production quality vector graphs in papers.
+It has math support e.g. $x^2$.
 But its error information is not helpful, its control flows is obscure and very slow.
 Hence I wrap the tikz library with the following design principles
 
