@@ -15,17 +15,13 @@ end
 abstract type AbstractOperation end
 abstract type AbstractShapeOperation <: AbstractOperation end
 
-struct MoveTo  <: AbstractOperation
-    x::Float64
-    y::Float64
+struct MoveTo{PT <: AbstractCoordinate}  <: AbstractOperation
+    coo::PT
 end
-operation_command(t::MoveTo) = "$((t.x,t.y))"
-struct MoveToId  <: AbstractOperation
-    id::String
-end
-function operation_command(c::MoveToId)
-    "($(c.id))"
-end
+operation_command(t::MoveTo{Point}) = "$((t.coo.x, t.coo.y))"
+operation_command(t::MoveTo{Polar}) = "($(t.coo.angle):$(t.coo.radius)cm)"
+operation_command(t::MoveTo{NodeID}) = "($(t.coo.id))"
+
 struct Circle  <: AbstractShapeOperation
     radius::Float64
 end
@@ -144,6 +140,18 @@ end
 end
 operation_command(s::Line) = "to [$(parse_args(String[], s.props))]"
 
+struct Arc <: AbstractOperation
+    radius::Float64
+    start::Float64
+    stop::Float64
+end
+operation_command(s::Arc) = "arc ($(s.start):$(s.stop):$(s.radius)cm)"
+
+struct Plus{PT <: AbstractCoordinate} <: AbstractOperation
+    coo::PT
+end
+operation_command(s::Plus) = "+" * operation_command(render_id(s.coo))
+
 struct Controls <: AbstractOperation
     controls::NTuple{M,AbstractOperation} where M
     Controls(c1) = new((render_id(c1),))
@@ -236,8 +244,9 @@ end
     Path(render_id.(path), args, props)
 end
 render_id(x) = x
-render_id(x::String) = MoveToId(x)
-render_id(x::Tuple) = MoveTo(x...)
+render_id(x::AbstractCoordinate) = MoveTo(x)
+render_id(x::String) = MoveTo(NodeID(x))
+render_id(x::Tuple) = MoveTo(Point(x...))
 function render_id(x::Path)
     for seg in x.path
         if hasfield(typeof(seg), :id)
@@ -250,7 +259,6 @@ function operation_command(c::Controls)
     ".. controls $(join([operation_command(c) for c in c.controls], " and ")) .."
 end
 function command(path::Path)
-    default_values = TIKZ_DEFAULT_VALUES[:Path]
     props = copy(path.props)
 
     # replace special names
@@ -268,7 +276,6 @@ end
 nodefault(a, b) = ifelse(a == b, "", a)
 
 # TODO
-# arc: \draw (3mm,0mm) arc (0:30:3mm);  0deg-30deg, radius=3mm
 # arc, ellipse: \tikz \draw (0,0) arc (0:315:1.75cm and 1cm);
 # parabola: \tikz \draw (0,0) rectangle (1,1) (0,0) parabola (1,1);
 # parabola bend: \tikz \draw[x=1pt,y=1pt] (0,0) parabola bend (4,16) (6,12);

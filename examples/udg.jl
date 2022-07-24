@@ -1,6 +1,6 @@
 using TikzGenerator
 
-function udg(filename="_local/udg.svg")
+function udg()
     function node!(c, x, y, style; kwargs...)
         if style == 1
             v = vertex!(c, x, y; shape="circle", minimum_size=0.3, fill="red", draw="none")
@@ -30,7 +30,19 @@ function udg(filename="_local/udg.svg")
         edge!(c, nodelist[1], (1.05, 1.05), arrow="-stealth", line_width=0.03)
         text!(c, 0.2, 0.7, raw"{\Large $r_B$}")
     end
-    writesvg(filename, can)
+    return can
 end
 
-udg()
+# If you have both `latexmk` and `pdf2svg` CLI tools available.
+writesvg("_local/udg.svg", udg())
+
+# send to remote for compiling
+using HTTP, JSON
+
+IP = "http://alg-hub.com:8000"
+
+function remotecall(IP::String, PKG::String, dict::AbstractDict)
+    res = HTTP.request("POST", "$IP/$PKG", [("Content-Type", "application/json")], JSON.json(dict))
+    JSON.parse(String(res.body))
+end
+write("_local/udg.svg", remotecall(IP, "TikzGenerator", Dict("tex"=>generate_standalone(udg())))["svg"])

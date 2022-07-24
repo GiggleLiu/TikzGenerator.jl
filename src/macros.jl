@@ -107,7 +107,7 @@ end
 function check_iml(ex)
     @match ex begin
         :($x ∈ $y) ||
-        :($x in $y) => :(@assert $x ∈ $y "value of `$($(QuoteNode(x)))`: `$($(x))` is not in $($(y))!")
+        :($x in $y) => :($x ∉ $y && @warn "value of `$($(QuoteNode(x)))`: `$($(x))` is not in $($(y))!")
         :(begin $(args...) end) => :(begin $(check_iml.(args)...) end)
         ::LineNumberNode => ex
     end

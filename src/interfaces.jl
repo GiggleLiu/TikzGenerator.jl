@@ -1,17 +1,17 @@
 function mesh!(canvas::Canvas, xmin, xmax, ymin, ymax, step; draw="black", kwargs...)
-    element = Path(MoveTo(xmin-1e-3, ymin-1e-3), Grid(xstep=step, ystep=step), MoveTo(xmax, ymax); draw, kwargs...)
+    element = Path((xmin-1e-3, ymin-1e-3), Grid(xstep=step, ystep=step), (xmax, ymax); draw, kwargs...)
     push!(canvas, element); element
 end
 function circle!(canvas::Canvas, x, y, radius; annotate="", id=autoid!(), kwargs...)
-    element = Path(MoveTo(x, y), Circle(radius), Node(annotate=annotate, id=id); minimum_size=radius, inner_sep=0, kwargs...)
+    element = Path((x, y), Circle(radius), Node(annotate=annotate, id=id); minimum_size=radius, inner_sep=0, kwargs...)
     push!(canvas, element); element
 end
 function rectangle!(canvas::Canvas, x, y, width, height; annotate="", id=autoid!(), kwargs...)
-    element = Path(MoveTo(x, y), Rectangle(), Node(annotate=annotate, id=id), MoveTo(x+width, y+height); inner_sep=0, kwargs...)
+    element = Path((x, y), Rectangle(), Node(annotate=annotate, id=id), (x+width, y+height); inner_sep=0, kwargs...)
     push!(canvas, element); element
 end
 function vertex!(canvas::Canvas, x, y; shape="", annotate="", id=autoid!(), kwargs...)
-    element = Path(MoveTo(x, y), Node(annotate=annotate, id=id; shape=shape, kwargs...))
+    element = Path((x, y), Node(annotate=annotate, id=id; shape=shape, kwargs...))
     push!(canvas, element); element
 end
 function edge!(canvas::Canvas, a, b; annotate="", kwargs...)
@@ -32,14 +32,20 @@ function curve!(canvas::Canvas, locs...; annotate="", kwargs...)
     push!(canvas, element); element
 end
 
-function line!(canvas::Canvas, a, b; annotate="", kwargs...)
+function line!(canvas::Canvas, a, b; annotate="", out=0, in=0, bend_right=0, bend_left=0, kwargs...)
     element = if isempty(annotate)
-        Path(a, Line(;kwargs...), b)
+        Path(a, Line(; in, out, bend_left, bend_right), b; kwargs...)
     else
-        Path(a, Line(;kwargs...), Node(annotate=annotate), b)
+        Path(a, Line(; in, out, bend_left, bend_right), Node(annotate=annotate), b; kwargs...)
     end
     push!(canvas, element); element
 end
+
+function arc!(canvas::Canvas, center, radius, start, stop; kwargs...)
+    element = Path(center, Plus(Polar(radius, start)), Arc(radius, start, stop); kwargs...)
+    push!(canvas, element); element
+end
+
 function text!(canvas::Canvas, x, y, str::String; kwargs...)
     vertex!(canvas, x, y; annotate=str, kwargs...)
 end

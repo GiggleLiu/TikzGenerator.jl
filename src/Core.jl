@@ -1,5 +1,21 @@
 abstract type AbstractTikzElement end
 
+abstract type AbstractCoordinate end
+
+struct Point <: AbstractCoordinate
+    x::Float64
+    y::Float64
+end
+Base.iterate(p::Point, args...) = iterate((p.x, p.y), args...)
+
+struct Polar <: AbstractCoordinate
+    radius::Float64
+    angle::Float64
+end
+struct NodeID <: AbstractCoordinate
+    id::String
+end
+
 struct Canvas
     header::String
     libs::Vector{String}
