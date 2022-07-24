@@ -17,7 +17,7 @@ function draw_grid!(c, x, y, config::AbstractMatrix; gridsize)
         for j=1:size(config,2)
             cij = config[i, j]
             color = if cij == ■
-                "orange"
+                "black"
             else
                 "white"
             end

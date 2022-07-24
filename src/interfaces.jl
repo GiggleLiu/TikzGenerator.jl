@@ -2,16 +2,19 @@ function mesh!(canvas::Canvas, xmin, xmax, ymin, ymax, step; draw="black", kwarg
     element = Path((xmin-1e-3, ymin-1e-3), Grid(xstep=step, ystep=step), (xmax, ymax); draw, kwargs...)
     push!(canvas, element); element
 end
-function circle!(canvas::Canvas, x, y, radius; annotate="", id=autoid!(), kwargs...)
-    element = Path((x, y), Circle(radius), Node(annotate=annotate, id=id); minimum_size=radius, inner_sep=0, kwargs...)
+circle!(canvas::Canvas, x::Real, y::Real, radius; kwargs...) = circle!(canvas, Point(x, y), radius; kwargs...)
+function circle!(canvas::Canvas, xy, radius; annotate="", id=autoid!(), kwargs...)
+    element = Path(xy, Circle(radius), Node(annotate=annotate, id=id); minimum_size=radius, inner_sep=0, kwargs...)
     push!(canvas, element); element
 end
-function rectangle!(canvas::Canvas, x, y, width, height; annotate="", id=autoid!(), kwargs...)
-    element = Path((x, y), Rectangle(), Node(annotate=annotate, id=id), (x+width, y+height); inner_sep=0, kwargs...)
+rectangle!(canvas::Canvas, x::Real, y::Real, width, height; kwargs...) = rectangle!(canvas, Point(x, y), width, height; kwargs...)
+function rectangle!(canvas::Canvas, xy, width, height; annotate="", id=autoid!(), kwargs...)
+    element = Path(xy, Rectangle(), Node(annotate=annotate, id=id), (x+width, y+height); inner_sep=0, kwargs...)
     push!(canvas, element); element
 end
-function vertex!(canvas::Canvas, x, y; shape="", annotate="", id=autoid!(), kwargs...)
-    element = Path((x, y), Node(annotate=annotate, id=id; shape=shape, kwargs...))
+vertex!(canvas::Canvas, x::Real, y::Real; kwargs...) = vertex!(canvas, Point(x, y); kwargs...)
+function vertex!(canvas::Canvas, xy; shape="", annotate="", id=autoid!(), kwargs...)
+    element = Path(xy, Node(annotate=annotate, id=id; shape=shape, kwargs...))
     push!(canvas, element); element
 end
 function edge!(canvas::Canvas, a, b; annotate="", kwargs...)
@@ -46,8 +49,16 @@ function arc!(canvas::Canvas, center, radius, start, stop; kwargs...)
     push!(canvas, element); element
 end
 
-function text!(canvas::Canvas, x, y, str::String; kwargs...)
-    vertex!(canvas, x, y; annotate=str, kwargs...)
+function text!(canvas::Canvas, x::Real, y::Real, str::String; kwargs...)
+    text!(canvas, Point(x, y), str; kwargs...)
+end
+function text!(canvas::Canvas, xy, str::String; offset=(0.0, 0.0), id=autoid!(), kwargs...)
+    if offset == (0.0, 0.0)
+        element = Path(xy, Node(annotate=str, id=id; kwargs...))
+    else
+        element = Path(xy, Plus(Point(offset...)), Node(annotate=str, id=id; kwargs...))
+    end
+    push!(canvas, element); element
 end
 
 function Base.push!(canvas::Canvas, element)

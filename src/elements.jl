@@ -250,7 +250,7 @@ render_id(x::Tuple) = MoveTo(Point(x...))
 function render_id(x::Path)
     for seg in x.path
         if hasfield(typeof(seg), :id)
-            return MoveToId(seg.id)
+            return MoveTo(NodeID(seg.id))
         end
     end
     error("can not find any id in path: $(x)")
