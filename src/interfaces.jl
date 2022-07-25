@@ -7,9 +7,9 @@ function circle!(canvas::Canvas, xy, radius; annotate="", id=autoid!(), kwargs..
     element = Path(xy, Circle(radius), Node(annotate=annotate, id=id); minimum_size=radius, inner_sep=0, kwargs...)
     push!(canvas, element); element
 end
-rectangle!(canvas::Canvas, x::Real, y::Real, width, height; kwargs...) = rectangle!(canvas, Point(x, y), width, height; kwargs...)
-function rectangle!(canvas::Canvas, xy, width, height; annotate="", id=autoid!(), kwargs...)
-    element = Path(xy, Rectangle(), Node(annotate=annotate, id=id), (x+width, y+height); inner_sep=0, kwargs...)
+rectangle!(canvas::Canvas, x::Real, y::Real, width, height; kwargs...) = rectangle!(canvas, Point(x, y), Point(x+width, y+height); kwargs...)
+function rectangle!(canvas::Canvas, xy, xy2; annotate="", id=autoid!(), kwargs...)
+    element = Path(xy, Rectangle(), Node(annotate=annotate, id=id), xy2; inner_sep=0, kwargs...)
     push!(canvas, element); element
 end
 vertex!(canvas::Canvas, x::Real, y::Real; kwargs...) = vertex!(canvas, Point(x, y); kwargs...)

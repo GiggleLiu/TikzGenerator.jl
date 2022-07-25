@@ -69,6 +69,14 @@ $content
 end
 generate_standalone(canvas::Canvas) = generate_standalone(canvas.libs, canvas.header, canvas.args, canvas.props, join([[generate_rgbcolor(k,v...) for (k,v) in canvas.colors]..., command.(canvas.contents)...], "\n"))
 
+function show_canvas(canvas::Canvas)
+	options = parse_args(canvas.args, canvas.props)
+    preamble=join(["\\usetikzlibrary{$lib}" for lib in canvas.libs], "\n") * "\n" * canvas.header
+	body = join([[generate_rgbcolor(k,v...) for (k,v) in canvas.colors]..., command.(canvas.contents)...], "\n")
+	TikzPicture(body; options, preamble)
+end
+Base.show(io::IO, mime::MIME"image/svg+xml", canvas::Canvas) = Base.show(io, mime, show_canvas(canvas))
+
 function Base.write(io::IO, canvas::Canvas)
     write(io, generate_standalone(canvas))
 end
