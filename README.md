@@ -12,6 +12,6 @@ But its error information is not helpful, its control flows is obscure and very 
 Hence I wrap the tikz library with the following design principles
 
 * completeness, can do everything allowed in tikz.
-* early error, try best to error or warn user at function inputs.
+* early error, try best to error or warn users at function inputs.
 * unitless, always in `cm`.
-* no tikz control flow.
+* Julia control flow instead of slow tikz control flow.
