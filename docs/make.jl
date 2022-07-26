@@ -5,7 +5,7 @@ using Documenter
 using DocThemeIndigo
 using PlutoStaticHTML
 
-example_pages = let
+let
     """Run all Pluto notebooks (".jl" files) in `notebook_dir` and write outputs to HTML files."""
     notebook_dir = joinpath(pkgdir(TikzGenerator), "examples")
     target_dir = joinpath(pkgdir(TikzGenerator), "docs", "src", "examples")
@@ -23,13 +23,6 @@ example_pages = let
     bopts = BuildOptions(target_dir; use_distributed, output_format)
     build_notebooks(bopts)
     Pkg.activate(@__DIR__)
-    pages = String[]
-    for page in readdir(target_dir)
-        if endswith(page, ".md")
-            push!(pages, joinpath("examples", page))
-        end
-    end
-    pages
 end
 
 indigo = DocThemeIndigo.install(TikzGenerator)
@@ -47,7 +40,12 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Examples" => example_pages,
+        "Examples" => [
+                       "Block Quantum Cellular Automata"=>"examples/blockQCA.md",
+                       "Unit Disk Graph"=>"examples/unitdiskgraph.md",
+                       "Computational graph"=>"examples/masked_tree.md",
+                       "State Machine"=>"examples/diagram.md",
+                      ],
         "References" => "ref.md",
     ],
     doctest=false,

@@ -9,9 +9,8 @@ function serve(;host::String="0.0.0.0", port::Int=8000)
     LiveServer.servedocs(;
         doc_env=true,
         skip_dirs=[
-            joinpath("docs", "src", "generated"),
-            joinpath("docs", "src", "examples"),
             joinpath("docs", "build"),
+            joinpath("docs", "src"),
         ],
         literate="examples",
         host=\"$host\",
