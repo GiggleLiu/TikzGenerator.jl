@@ -1,6 +1,6 @@
 # TikzGenerator
 
-A work in progress Julia wrapper for generating [Tikz](https://en.m.wikipedia.org/wiki/PGF/TikZ) scripts.
+A work in progress Julia package for generating [Tikz](https://en.m.wikipedia.org/wiki/PGF/TikZ) scripts.
 
 (You can star, watch or contribute to this repo (issue or code), but please do not use it before this line has been removed to save your time)
 
