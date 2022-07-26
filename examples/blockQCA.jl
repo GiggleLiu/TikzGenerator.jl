@@ -5,10 +5,13 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 21d9466e-7c11-48bb-beea-a50d9c374d7f
-using Pkg; Pkg.activate(".")
+using Pkg; Pkg.activate(@__DIR__)
 
 # ╔═╡ 0f03e740-ab67-4319-b53f-d3b31964f004
 using Revise, TikzGenerator
+
+# ╔═╡ a284def0-733b-4d39-bb6a-8ee0139823a4
+
 
 # ╔═╡ 02456437-df3d-4092-bfea-403a1177283b
 @enum Σ σ₀ σ₁ □ ■ σₛ sx sy
@@ -225,6 +228,7 @@ end
 circles(6, 6)
 
 # ╔═╡ Cell order:
+# ╠═a284def0-733b-4d39-bb6a-8ee0139823a4
 # ╠═21d9466e-7c11-48bb-beea-a50d9c374d7f
 # ╠═0f03e740-ab67-4319-b53f-d3b31964f004
 # ╠═02456437-df3d-4092-bfea-403a1177283b

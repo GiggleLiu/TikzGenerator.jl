@@ -1,4 +1,4 @@
-# Run examples
+# How to run examples?
 
 ## Setup
 1. You need to have a latex environment as requires by [`TikzPictures`](https://github.com/JuliaTeX/TikzPictures.jl),
