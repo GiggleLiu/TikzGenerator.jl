@@ -64,6 +64,17 @@ function edge!(canvas::Canvas, a, b; annotate="", kwargs...)
 end
 
 """
+    elbow!(canvas::Canvas, a, b; annotate="", kwargs...)
+
+Draw an elbow connector.
+Check [`Path`](@ref) for `kwargs`.
+"""
+function elbow!(canvas::Canvas, a, b; style, kwargs...)
+    element = Path(a, Elbow(style), b; kwargs...)
+    push!(canvas, element); element
+end
+
+"""
     curve!(canvas::Canvas, locs...; annotate="", kwargs...)
 
 Draw a curve.
@@ -159,9 +170,10 @@ function vizgraph!(c::Canvas, locations::AbstractVector, edges; fills=fill("blac
     return nodes, lines
 end
 
-function rotate(vec::Tuple, angle::Real)
+function rotate(vec::Tuple, angle::Real; center=(0.0, 0.0))
     s, c = sincos(angle)
-    (c * vec[1] - s * vec[2], s * vec[1] + c * vec[2])
+    v = vec .- center
+    (c * v[1] - s * v[2], s * v[1] + c * v[2]) .+ center
 end
 
 function normalize(vec::Tuple)
