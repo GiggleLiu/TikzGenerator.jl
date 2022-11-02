@@ -98,11 +98,12 @@ function update_props!(fname::Symbol, dict::Dict; kwargs...)
     default_values = TIKZ_DEFAULT_VALUES[fname]
     for (k,v) in kwargs
         if !(haskey(default_values, k) && default_values[k] == v)
-            dict[replace(string(k), "_"=>" ")] = _render_val(k, v)
+            dict[symbol2string(k)] = _render_val(k, v)
         end
     end
     return dict
 end
+symbol2string(s::Symbol) = replace(string(s), "_"=>" ")
 
 build_args(fname::Symbol; kwargs...) = update_args!(fname, String[]; kwargs...)
 function update_args!(fname::Symbol, args::AbstractVector{String}; kwargs...)
@@ -123,7 +124,7 @@ function parse_args(args::Vector, kwargs::Dict)  # properties
     return join([filter(!isempty, args)..., [v isa Bool ? "$k" : "$k=$(_render_val(k, v))" for (k,v) in kwargs if !isempty(v)]...], ", ")
 end
 function _render_val(k, v::Real)
-    if k ∈ [:line_width, :minimum_size, :inner_sep, :text_width, :radius]
+    if k ∈ [:line_width, :minimum_size, :minimum_width, :minimum_height, :inner_sep, :text_width, :radius]
         "$(v)cm"  # default unit is `cm`
     else
         string(v)

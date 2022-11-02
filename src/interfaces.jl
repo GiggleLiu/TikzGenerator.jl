@@ -173,6 +173,34 @@ function midway(start::Tuple, stop::Tuple)
     (start .+ stop) ./ 2
 end
 
+for FNAME in [:west, :east, :center,
+              :north, :north_east, :north_west,
+              :south, :south_east, :south_west,
+              :base_west, :base, :base_east,
+              :mid_west, :mid_east, :mid,
+             ]
+    @eval export $FNAME
+    @eval function $FNAME(node::Path)
+        anchor(node, $(QuoteNode(FNAME)))
+    end
+end
+
+export anchor
+
+"""
+    anchor(node, direction)
+
+Get the anchor name for the target node (a string as id or a `Path` instance).
+"""
+anchor(node::Path, direction::Union{Symbol, Int}) = anchor(render_id(node).coo.id, direction)
+function anchor(node::String, direction::Symbol)
+    str = symbol2string(direction)
+    node * ".$str"
+end
+function anchor(node::String, direction::Int)
+    node * ".$direction"
+end
+
 """
     brace!(c::Canvas, start::Tuple, stop::Tuple, text::String=""; mirror::Bool=false, draw="black", thick::Bool=true, raise::Real=0.5, text_offset::Real=0.5)
 

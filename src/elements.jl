@@ -69,8 +69,12 @@ end
         text::String="",
         line_width::Real=0.014,
         minimum_size::Real=0,
+        minimum_height::Real=0,   # for ellipse
+        minimum_width::Real=0,   # for ellipse
         line_style::String="solid",
         opacity::Real=1,
+        fill_opacity::Real=1,
+        draw_opacity::Real=1,
         align::String="center",
         text_width::Real=0,
         use_as_bounding_box::Bool=false,
@@ -84,7 +88,7 @@ end
         align ∈ align_styles
     end
     args = build_args(:Node; anchor, placement, sloped, shape, line_style, use_as_bounding_box)
-    props = build_props(:Node; fill, draw, text, line_width, minimum_size, opacity, align, text_width, inner_sep)
+    props = build_props(:Node; fill, draw, text, line_width, minimum_size, minimum_height, minimum_width, opacity, fill_opacity, draw_opacity, align, text_width, inner_sep)
     return Node(id, annotate, args, props)
 end
 
@@ -220,6 +224,8 @@ end
 
         inner_sep::Real = 0.140584,  # in cm, 0.3333em
         minimum_size::Real = 0,  # in cm
+        minimum_height::Real=0,   # for ellipse
+        minimum_width::Real=0,   # for ellipse
         top_color::String="",           # shading
         bottom_color::String="",
         left_color::String="",
@@ -239,7 +245,7 @@ end
         fill, fill_opacity, draw, draw_opacity, pattern_color,
         snake, segment_amplitude, segment_aspect, segment_length, line_after_snake,
         rotate,
-        inner_sep, minimum_size, top_color, bottom_color, left_color, right_color,
+        inner_sep, minimum_size, minimum_height, minimum_width, top_color, bottom_color, left_color, right_color,
     )
     Path(render_id.(path), args, props)
 end
