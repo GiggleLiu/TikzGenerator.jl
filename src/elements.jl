@@ -80,6 +80,9 @@ end
         use_as_bounding_box::Bool=false,
         inner_sep::Real = 0.140584,  # in cm, 0.3333em
         #radius::Real=0.0   #
+        
+        # transformation
+        rotate::Real=0,
     )
     @check begin
         anchor ∈ anchor_styles
@@ -88,7 +91,7 @@ end
         align ∈ align_styles
     end
     args = build_args(:Node; anchor, placement, sloped, shape, line_style, use_as_bounding_box)
-    props = build_props(:Node; fill, draw, text, line_width, minimum_size, minimum_height, minimum_width, opacity, fill_opacity, draw_opacity, align, text_width, inner_sep)
+    props = build_props(:Node; fill, draw, text, line_width, minimum_size, minimum_height, minimum_width, opacity, fill_opacity, draw_opacity, align, text_width, inner_sep, rotate)
     return Node(id, annotate, args, props)
 end
 
@@ -143,6 +146,18 @@ end
     Line(String[], build_props(:Line; out, in, bend_right, bend_left))
 end
 operation_command(s::Line) = "to [$(parse_args(String[], s.props))]"
+
+struct Elbow <: AbstractOperation
+    style::String
+    function Elbow(style::String)
+        @check begin
+            style ∈ ["|-", "-|"]
+        end
+        return new(style)
+    end
+end
+
+operation_command(s::Elbow) = s.style
 
 struct Arc <: AbstractOperation
     radius::Float64
